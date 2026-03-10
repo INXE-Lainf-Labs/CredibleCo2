@@ -10,7 +10,7 @@ from torch.optim.lr_scheduler import LambdaLR
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset, random_split
 
-from models.LSTM import LSTMModel, MultipleLayerLSTM
+from src.models.LSTM import LSTMModel, MultipleLayerLSTM
 
 def train_model(X_seq, y_seq, title=None, hidden_dim=32 , train_size=0.8, epochs=5, num_blocks=4, batch_size=128, warmup_epochs =5, base_lr = 1e-5, max_lr = 1e-3, final_lr = 1e-6, device='cuda' if torch.cuda.is_available() else 'cpu'):
     """

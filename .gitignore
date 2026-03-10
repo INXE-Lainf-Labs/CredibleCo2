@@ -1,3 +1,7 @@
 .DS_Store
 slurm*
 ._*
+src/start_server.sh
+__pycache__/*
+.*
+
