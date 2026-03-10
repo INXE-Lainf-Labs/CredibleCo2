@@ -21,10 +21,13 @@ def train_model(X_seq, y_seq, title=None, hidden_dim=32 , train_size=0.8, epochs
     if y_seq.size(-1) > 2:
         y_seq = y_seq.unsqueeze(-1)
     
+    X_seq, y_seq = X_seq.to(device), y_seq.to(device)
+
     dataset = TensorDataset(X_seq, y_seq)
     train_len = int(len(dataset) * train_size)
-    val_len = len(dataset) - train_len
-    train_set, val_set = random_split(dataset, [train_len, val_len])
+    
+    train_set = TensorDataset(X_seq[:train_len], y_seq[:train_len])
+    val_set = TensorDataset(X_seq[train_len:], y_seq[train_len:])    
     
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=batch_size)
@@ -43,7 +46,7 @@ def train_model(X_seq, y_seq, title=None, hidden_dim=32 , train_size=0.8, epochs
 
     # Loss and optimizer
     criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=base_lr)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=base_lr)
     scheduler = get_cosine_schedule_with_warmup(optimizer, warmup_epochs, total_epochs, base_lr, max_lr, final_lr)
 
     train_losses, val_losses = [], []
@@ -55,7 +58,6 @@ def train_model(X_seq, y_seq, title=None, hidden_dim=32 , train_size=0.8, epochs
         model.train()
         train_loss = 0.0
         for xb, yb in train_loader:
-            xb, yb = xb.to(device), yb.to(device)
 
             pred = model(xb)
             loss = criterion(pred, yb)
@@ -74,7 +76,6 @@ def train_model(X_seq, y_seq, title=None, hidden_dim=32 , train_size=0.8, epochs
         val_loss = 0.0
         with torch.no_grad():
             for xb, yb in val_loader:
-                xb, yb = xb.to(device), yb.to(device)
                 pred = model(xb)
                 loss = criterion(pred, yb)
                 val_loss += loss.item() * xb.size(0)
@@ -97,22 +98,24 @@ def train_model(X_seq, y_seq, title=None, hidden_dim=32 , train_size=0.8, epochs
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+    plt.close()
 
     # Final evaluation using MAE
     model.eval()
     mae_loss = nn.L1Loss()
     mae = 0.0
+    mae_list = []
     with torch.no_grad():
         for xb, yb in val_loader:
-            xb, yb = xb.to(device), yb.to(device)
             pred = model(xb)
             mae += mae_loss(pred, yb).item() * xb.size(0)
     mae /= len(val_loader.dataset)
+    mae_list.append(mae)
 
     print(f"\nFinal MAE: {mae:.8f}, Final MSE: {val_losses[-1]:.8f}")
     print(f'Max memory allocated: {torch.cuda.max_memory_allocated() / 1024**3:.2f} GB')
 
-    return model
+    return model, train_losses, val_losses, mae_list
 
 def time_series_dataset_split(dataset, labels, id_column, train_size=0.8, WINDOW_SIZE = 10):
     x_train_seq = []
