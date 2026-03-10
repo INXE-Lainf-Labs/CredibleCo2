@@ -2,6 +2,6 @@
 slurm*
 ._*
 src/start_server.sh
-__pycache__/*
+src/__pycache__/*
 .*
 
