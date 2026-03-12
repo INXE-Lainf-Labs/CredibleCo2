@@ -1,0 +1,1 @@
+{"Blazer dataset": {"Emission Model": {"metrics": {"train": {"mse": {"mean": 0.0726, "std": 0.07577}}, "val": {"mse": {"mean": 2.96825, "std": 0.41827}, "mae": 0.81493}}}}}

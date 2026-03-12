@@ -1,0 +1,1 @@
+{"QX50 dataset": {"Emission Model": {"metrics": {"train": {"mse": {"mean": 0.09683, "std": 0.10378}}, "val": {"mse": {"mean": 0.07491, "std": 0.0143}, "mae": 0.12884}}}}}

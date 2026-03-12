@@ -1,0 +1,1 @@
+{"Pacifica dataset": {"Emission Model": {"metrics": {"train": {"mse": {"mean": 0.83086, "std": 0.2706}}, "val": {"mse": {"mean": 0.46186, "std": 0.12619}, "mae": 0.39333}}}}}
