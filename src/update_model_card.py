@@ -22,7 +22,12 @@ def build_markdown(card: dict) -> str:
     md.append("# Model Card — Credible Co2\n")
     md.append("Project description: lorem ipsum")
     md.append("## 1. General Information:")
-    md.append("Here we provide a list of the LSTM models and datasets they were trained to predict Carbon Dioxide (Co2) emissions.")
+    md.append("Here we provide a list of the LSTM models and datasets they were trained to predict Carbon Dioxide (Co2) emissions.\n")
+    md.append("|    Dataset |   Entries |   Type    |")
+    md.append("|    :------:    |   :------:    |   :------:    | ")
+    md.append("|    Infiniti QX50   |   `2222`    |   ICEV    |")    
+    md.append("|    Chevrolet Blazer   |   `2222`    |   ICEV    |")    
+    md.append("|    Chrysler Pacifica   |   `2222`    |   ICEV    |")        
     
     # md.append(f"*Nome do modelo:* {card['model_details']['name']}  ")
     # md.append(f"*Versão:* {card['model_details']['version']}  ")
