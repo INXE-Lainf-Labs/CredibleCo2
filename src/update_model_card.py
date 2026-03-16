@@ -25,9 +25,19 @@ def build_markdown(card: dict) -> str:
     md.append("Here we provide a list of the LSTM models and datasets they were trained to predict Carbon Dioxide (Co2) emissions.\n")
     md.append("|    Dataset |   Entries |   Type    |")
     md.append("|    :------:    |   :------:    |   :------:    | ")
-    md.append("|    Infiniti QX50   |   `2222`    |   ICEV    |")    
-    md.append("|    Chevrolet Blazer   |   `2222`    |   ICEV    |")    
-    md.append("|    Chrysler Pacifica   |   `2222`    |   ICEV    |")        
+    md.append("|    Infiniti QX50   |   `377149`    |   ICEV    |")    
+    md.append("|    Chevrolet Blazer   |   `108678`    |   ICEV    |")    
+    md.append("|    Chrysler Pacifica   |   `183996`    |   ICEV    |")        
+    md.append("|    BMW i3/Ieee   |   `1094794`    |   EV    |")        
+    md.append("\n")
+    
+    md.append("LSTMs:")
+    md.append("- Electrical Vehicle (EV): Between 1-4 layers with 32 hidden units per layer + layer norm with residual connections.")
+    md.append("- Internal Combustion Engine Vehicle (ICEV): Between 1-4 layers with 64 hidden units per layer + layer norm with residual connections")
+
+    md.append("## 2. Intended uses")
+
+    
     
     # md.append(f"*Nome do modelo:* {card['model_details']['name']}  ")
     # md.append(f"*Versão:* {card['model_details']['version']}  ")
@@ -35,8 +45,6 @@ def build_markdown(card: dict) -> str:
     # md.append(f"*Tipo:* {card['model_details']['type']}  \n")
     # md.append(f"{card['model_details']['description']}\n")
 
-    # md.append("## 2. Uso pretendido")
-    # md.append("### Casos de uso")
     # for item in card["intended_use"]["use_cases"]:
     #     md.append(f"- {item}")
     # md.append("\n### Não usar para")
