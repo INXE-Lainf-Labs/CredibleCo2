@@ -20,9 +20,9 @@ def save_json(path: Path, data: dict) -> None:
 def build_markdown(card: dict) -> str:
     md = []
     md.append("# Model Card — Credible Co2\n")
-    md.append("Project description: lorem ipsum")
+    md.append("Decarbonizing road transport requires consistent and transparent methods for comparing CO2 emissions across vehicle technologies. This work proposes a machine learning–based framework for like-for-like operational assessment of internal combustion engine vehicles (ICEVs) and electric vehicles (EVs) under identical, real-world driving conditions.")
     md.append("## 1. General Information:")
-    md.append("Here we provide a list of the LSTM models and datasets they were trained to predict Carbon Dioxide (Co2) emissions.\n")
+    md.append("Here we provide a list of the LSTM models and datasets they were trained to predict Carbon Dioxide (Co2) emissions (or features related to it).\n")
     md.append("|    Dataset |   Entries |   Type    |")
     md.append("|    :------:    |   :------:    |   :------:    | ")
     md.append("|    Infiniti QX50   |   `377149`    |   ICEV    |")    
@@ -32,10 +32,11 @@ def build_markdown(card: dict) -> str:
     md.append("\n")
     
     md.append("LSTMs:")
-    md.append("- Electrical Vehicle (EV): Between 1-4 layers with 32 hidden units per layer + layer norm with residual connections.")
-    md.append("- Internal Combustion Engine Vehicle (ICEV): Between 1-4 layers with 64 hidden units per layer + layer norm with residual connections")
+    md.append("- Electrical Vehicle (EV): Between 1-4 layers with 32 hidden units per layer + layer norm and residual connections.")
+    md.append("- Internal Combustion Engine Vehicle (ICEV): Between 1-4 layers with 64 hidden units per layer + layer norm and residual connections.")
 
     md.append("## 2. Intended uses")
+    md.append("The overall methodology (models, training scritps, data processing routines, etc) is intended to researchers or enthusiasts who may feel inspired to build upon this project to carry out work involving Co2 prediction with vehicle (time-series) data or related.")
 
     
     
