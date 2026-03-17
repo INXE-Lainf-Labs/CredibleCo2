@@ -27,6 +27,18 @@ The overall methodology (models, training scritps, data processing routines, etc
 - 3.3 - Proposed Test-Time Conterfactual Analysis:
      - In this final stage, we propose to treat the EV as a counterfactual system under identical operating conditions as an ICEV’s trajectory. The ICEV context (velocity, temperatures, longitudinal acceleration) would be fed to the pre trained EV Feature model to infer the torque and throttle that an EV would likely produce. These inferred signals, together with the velocity profile, would then be passed to the EV Emissions model to generate the counterfactual EV emissions series
 ## 4. Results
+- Electric Vehicles
+
+|    EV Dataset |    Metric    |   Split   |   Model Type    |   Result  |
+|    :------:    |   :------:    |   :------:    |   :------:    |   :------:    |
+|    ieee (BmW i3)   |    mse  |  train   |   Emission Model  |   0.00818 ± 0.01607  |
+|    ieee (BmW i3)   |    mse  |  val   |   Emission Model  |   0.00177 ± 0.01607  |
+|    ieee (BmW i3)   |    mae  |  val   |   Emission Model  |   0.02055 |
+|    ieee (BmW i3)   |    mse  |  train   |   Feature Model  |   92.21539 ± 0.01607  |
+|    ieee (BmW i3)   |    mse  |  val   |   Feature Model  |   113.46008 ± 0.01607  |
+|    ieee (BmW i3)   |    mae  |  val   |   Feature Model  |   4.32655 |
+- Combustion Vehicles
+
 |    ICEV Dataset |  Metric (Emission Model) |   Split   |   Result    |
 |    :------:    |   :------:    |   :------:    |   :------:    |
 |    QX50    |    mse  |  train   |   0.09683 ± 0.10378  |

@@ -56,8 +56,20 @@ def build_markdown(card: dict) -> str:
     md.append("## 4. Results")
     results = gather_results(Path('results/'))
     
-    #ieee = results.pop(0).keys()
+    r = results.pop(0)
+    key = list(r.keys())[0]
+    md.append("- Electric Vehicles\n")
+    md.append("|    EV Dataset |    Metric    |   Split   |   Model Type    |   Result  |")
+    md.append("|    :------:    |   :------:    |   :------:    |   :------:    |   :------:    |")
+    md.append(f"|    {key.replace('dataset','')}(BmW i3)   |    mse  |  train   |   Emission Model  |   {r[key]['Emission Model']['metrics']['train']['mse']['mean']} ± {r[key]['Emission Model']['metrics']['train']['mse']['std']}  |")
+    md.append(f"|    {key.replace('dataset','')}(BmW i3)   |    mse  |  val   |   Emission Model  |   {r[key]['Emission Model']['metrics']['val']['mse']['mean']} ± {r[key]['Emission Model']['metrics']['train']['mse']['std']}  |")
+    md.append(f"|    {key.replace('dataset','')}(BmW i3)   |    mae  |  val   |   Emission Model  |   {r[key]['Emission Model']['metrics']['val']['mae']} |")
+
+    md.append(f"|    {key.replace('dataset','')}(BmW i3)   |    mse  |  train   |   Feature Model  |   {r[key]['Torque/Throttle Model']['metrics']['train']['mse']['mean']} ± {r[key]['Emission Model']['metrics']['train']['mse']['std']}  |")
+    md.append(f"|    {key.replace('dataset','')}(BmW i3)   |    mse  |  val   |   Feature Model  |   {r[key]['Torque/Throttle Model']['metrics']['val']['mse']['mean']} ± {r[key]['Emission Model']['metrics']['train']['mse']['std']}  |")
+    md.append(f"|    {key.replace('dataset','')}(BmW i3)   |    mae  |  val   |   Feature Model  |   {r[key]['Torque/Throttle Model']['metrics']['val']['mae']} |")
     
+    md.append("- Combustion Vehicles\n")
     md.append("|    ICEV Dataset |  Metric (Emission Model) |   Split   |   Result    |")
     md.append("|    :------:    |   :------:    |   :------:    |   :------:    |")
     for r in results:
@@ -66,9 +78,7 @@ def build_markdown(card: dict) -> str:
             md.append(f"|    {key.replace('dataset','')}   |    mse  |  train   |   {r[key]['Emission Model']['metrics']['train']['mse']['mean']} ± {r[key]['Emission Model']['metrics']['train']['mse']['std']}  |")
             md.append(f"|    {key.replace('dataset','')}   |    mse  |  val  |  {r[key]['Emission Model']['metrics']['val']['mse']['mean']} ± {r[key]['Emission Model']['metrics']['val']['mse']['std']}    |")
             md.append(f"|    {key.replace('dataset','')}   |    mae  |  val  |  {r[key]['Emission Model']['metrics']['val']['mse']['mean']} |")
-            
-    
-        
+                    
     # md.append(f"*Nome do modelo:* {card['model_details']['name']}  ")
     # md.append(f"*Versão:* {card['model_details']['version']}  ")
     # md.append(f"*Status:* {card['model_details']['status']}  ")
