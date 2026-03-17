@@ -9,7 +9,7 @@ Here we provide a list of the LSTM models and datasets they were trained to pred
 |    Infiniti QX50   |   `377149`    |   ICEV    |
 |    Chevrolet Blazer   |   `108678`    |   ICEV    |
 |    Chrysler Pacifica   |   `183996`    |   ICEV    |
-|    BMW i3/Ieee   |   `1094794`    |   EV    |
+|    BMW i3 (ieee)   |   `1094794`    |   EV    |
 
 
 LSTMs:
@@ -17,3 +17,13 @@ LSTMs:
 - Internal Combustion Engine Vehicle (ICEV): Between 1-4 layers with 64 hidden units per layer + layer norm and residual connections.
 ## 2. Intended uses
 The overall methodology (models, training scritps, data processing routines, etc) is intended to researchers or enthusiasts who may feel inspired to build upon this project to carry out work involving Co2 prediction with vehicle (time-series) data or related.
+
+## 3. Evaluation scenarios
+- 3.1 - Domain Specific Training:
+ - Emission model:
+ - Feature model:
+- 3.2 - Proxy Validation:
+ - lorem ipsum:
+- 3.3 - Test-Time Conterfactual Analysis:
+ - lorem ipsum:
+## 4. Results

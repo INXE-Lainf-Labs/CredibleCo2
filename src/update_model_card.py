@@ -16,6 +16,13 @@ def save_json(path: Path, data: dict) -> None:
     with path.open("w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
+def gather_results(base_path: Path) -> list:
+    print("list jsons")
+    
+    results = []
+    for p in base_path:
+        results.append((p,load_json(p)))
+    return results
 
 def build_markdown(card: dict) -> str:
     md = []
@@ -28,7 +35,7 @@ def build_markdown(card: dict) -> str:
     md.append("|    Infiniti QX50   |   `377149`    |   ICEV    |")    
     md.append("|    Chevrolet Blazer   |   `108678`    |   ICEV    |")    
     md.append("|    Chrysler Pacifica   |   `183996`    |   ICEV    |")        
-    md.append("|    BMW i3/Ieee   |   `1094794`    |   EV    |")        
+    md.append("|    BMW i3 (ieee)   |   `1094794`    |   EV    |")        
     md.append("\n")
     
     md.append("LSTMs:")
@@ -36,10 +43,20 @@ def build_markdown(card: dict) -> str:
     md.append("- Internal Combustion Engine Vehicle (ICEV): Between 1-4 layers with 64 hidden units per layer + layer norm and residual connections.")
 
     md.append("## 2. Intended uses")
-    md.append("The overall methodology (models, training scritps, data processing routines, etc) is intended to researchers or enthusiasts who may feel inspired to build upon this project to carry out work involving Co2 prediction with vehicle (time-series) data or related.")
-
+    md.append("The overall methodology (models, training scritps, data processing routines, etc) is intended to researchers or enthusiasts who may feel inspired to build upon this project to carry out work involving Co2 prediction with vehicle (time-series) data or related.\n")
+    
+    md.append("## 3. Evaluation scenarios")
+    md.append("- 3.1 - Domain Specific Training:")
+    md.append(" - Emission model:")
+    md.append(" - Feature model:")
+    md.append("- 3.2 - Proxy Validation:")    
+    md.append(" - lorem ipsum:")
+    md.append("- 3.3 - Test-Time Conterfactual Analysis:")    
+    md.append(" - lorem ipsum:")
     
     
+    md.append("## 4. Results")
+        
     # md.append(f"*Nome do modelo:* {card['model_details']['name']}  ")
     # md.append(f"*Versão:* {card['model_details']['version']}  ")
     # md.append(f"*Status:* {card['model_details']['status']}  ")
