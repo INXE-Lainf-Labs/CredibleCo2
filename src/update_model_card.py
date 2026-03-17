@@ -17,11 +17,9 @@ def save_json(path: Path, data: dict) -> None:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 def gather_results(base_path: Path) -> list:
-    print("list jsons")
-    
     results = []
-    for p in base_path:
-        results.append((p,load_json(p)))
+    for f in base_path.iterdir():
+        results.append(load_json(f))        
     return results
 
 def build_markdown(card: dict) -> str:
@@ -47,15 +45,30 @@ def build_markdown(card: dict) -> str:
     
     md.append("## 3. Evaluation scenarios")
     md.append("- 3.1 - Domain Specific Training:")
-    md.append(" - Emission model:")
-    md.append(" - Feature model:")
+    md.append("     - Emission model: Trained to predict Co2 emissions.")
+    md.append("     - Feature model: Trained to predict domain-specific actuation variables, [torque, throttle], using only contextual variables common to both domains, namely: velocity, ambient temperature, cabin temperature, and longitudinal acceleration.")
     md.append("- 3.2 - Proxy Validation:")    
-    md.append(" - lorem ipsum:")
-    md.append("- 3.3 - Test-Time Conterfactual Analysis:")    
-    md.append(" - lorem ipsum:")
+    md.append("     - This stage acts as a pseudo-counterfactual analysis, in which we assess the capability of the feature models by evaluating how emission models behave when using features predicted by the feature models instead of original (dataset) features.")
+    md.append("- 3.3 - Proposed Test-Time Conterfactual Analysis:")    
+    md.append("     - In this final stage, we propose to treat the EV as a counterfactual system under identical operating conditions as an ICEV’s trajectory. The ICEV context (velocity, temperatures, longitudinal acceleration) would be fed to the pre trained EV Feature model to infer the torque and throttle that an EV would likely produce. These inferred signals, together with the velocity profile, would then be passed to the EV Emissions model to generate the counterfactual EV emissions series")
     
     
     md.append("## 4. Results")
+    results = gather_results(Path('results/'))
+    
+    #ieee = results.pop(0).keys()
+    
+    md.append("|    ICEV Dataset |  Metric (Emission Model) |   Split   |   Result    |")
+    md.append("|    :------:    |   :------:    |   :------:    |   :------:    |")
+    for r in results:
+        key = list(r.keys())[0]
+        if 'ieee' not in key:
+            md.append(f"|    {key.replace('dataset','')}   |    mse  |  train   |   {r[key]['Emission Model']['metrics']['train']['mse']['mean']} ± {r[key]['Emission Model']['metrics']['train']['mse']['std']}  |")
+            md.append(f"|    {key.replace('dataset','')}   |    mse  |  val  |  {r[key]['Emission Model']['metrics']['val']['mse']['mean']} ± {r[key]['Emission Model']['metrics']['val']['mse']['std']}    |")
+            md.append(f"|    {key.replace('dataset','')}   |    mae  |  val  |  {r[key]['Emission Model']['metrics']['val']['mse']['mean']} |")
+            md.append("|    :------:    |   :------:    |   :------:    |   :------:    |")
+            
+    
         
     # md.append(f"*Nome do modelo:* {card['model_details']['name']}  ")
     # md.append(f"*Versão:* {card['model_details']['version']}  ")
