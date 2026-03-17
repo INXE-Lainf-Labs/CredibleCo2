@@ -66,7 +66,6 @@ def build_markdown(card: dict) -> str:
             md.append(f"|    {key.replace('dataset','')}   |    mse  |  train   |   {r[key]['Emission Model']['metrics']['train']['mse']['mean']} ± {r[key]['Emission Model']['metrics']['train']['mse']['std']}  |")
             md.append(f"|    {key.replace('dataset','')}   |    mse  |  val  |  {r[key]['Emission Model']['metrics']['val']['mse']['mean']} ± {r[key]['Emission Model']['metrics']['val']['mse']['std']}    |")
             md.append(f"|    {key.replace('dataset','')}   |    mae  |  val  |  {r[key]['Emission Model']['metrics']['val']['mse']['mean']} |")
-            md.append("|    :------:    |   :------:    |   :------:    |   :------:    |")
             
     
         

@@ -32,12 +32,9 @@ The overall methodology (models, training scritps, data processing routines, etc
 |    QX50    |    mse  |  train   |   0.09683 ± 0.10378  |
 |    QX50    |    mse  |  val  |  0.07491 ± 0.0143    |
 |    QX50    |    mae  |  val  |  0.07491 |
-|    :------:    |   :------:    |   :------:    |   :------:    |
 |    Blazer    |    mse  |  train   |   0.0726 ± 0.07577  |
 |    Blazer    |    mse  |  val  |  2.96825 ± 0.41827    |
 |    Blazer    |    mae  |  val  |  2.96825 |
-|    :------:    |   :------:    |   :------:    |   :------:    |
 |    Pacifica    |    mse  |  train   |   0.83086 ± 0.2706  |
 |    Pacifica    |    mse  |  val  |  0.46186 ± 0.12619    |
 |    Pacifica    |    mae  |  val  |  0.46186 |
-|    :------:    |   :------:    |   :------:    |   :------:    |
