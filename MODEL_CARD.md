@@ -1,6 +1,6 @@
 # Model Card — Credible Co2
 
-Decarbonizing road transport requires consistent and transparent methods for comparing CO2 emissions across vehicle technologies. This work proposes a machine learning–based framework for like-for-like operational assessment of internal combustion engine vehicles (ICEVs) and electric vehicles (EVs) under identical, real-world driving conditions.
+This section covers information regarding models and experiments conducted for the paper.
 ## 1. General Information:
 Here we provide a list of the LSTM models and datasets they were trained to predict Carbon Dioxide (Co2) emissions (or features related to it).
 

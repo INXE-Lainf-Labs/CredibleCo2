@@ -25,7 +25,7 @@ def gather_results(base_path: Path) -> list:
 def build_markdown(card: dict) -> str:
     md = []
     md.append("# Model Card — Credible Co2\n")
-    md.append("Decarbonizing road transport requires consistent and transparent methods for comparing CO2 emissions across vehicle technologies. This work proposes a machine learning–based framework for like-for-like operational assessment of internal combustion engine vehicles (ICEVs) and electric vehicles (EVs) under identical, real-world driving conditions.")
+    md.append("This section covers information regarding models and experiments conducted for the paper.")
     md.append("## 1. General Information:")
     md.append("Here we provide a list of the LSTM models and datasets they were trained to predict Carbon Dioxide (Co2) emissions (or features related to it).\n")
     md.append("|    Dataset |   Entries |   Type    |")
@@ -56,6 +56,8 @@ def build_markdown(card: dict) -> str:
     md.append("## 4. Results")
     results = gather_results(Path('results/'))
     
+    # TODO: adicionar unidades de medida
+      
     r = results.pop(0)
     key = list(r.keys())[0]
     md.append("- Electric Vehicles\n")
@@ -170,6 +172,6 @@ def main() -> None:
     #save_json(MODEL_CARD_JSON, card)
     MODEL_CARD_MD.write_text(build_markdown(None), encoding="utf-8")
 
-    print("Model card atualizado com sucesso.")
+    print("Model card successfully updated.")
 
 main()
