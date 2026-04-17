@@ -1,0 +1,39 @@
+name: co2
+channels:
+  - conda-forge
+dependencies:
+  # Core Python & Base Libraries
+  - python=3.10
+  - pip
+  - numpy
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - pillow
+  
+  # UI/Tools
+  - pyside6
+  - pyparsing
+  - tornado
+  
+  - pip:
+    # PyTorch (Standard installation automatically supports MPS on Mac)
+    - torch
+    - torchvision
+    - torchaudio
+    
+    # Data & Math
+    - pandas
+    - sympy
+    
+    # Jupyter Ecosystem
+    - jupyterlab
+    - notebook
+    - ipython
+    
+    # Utilities & Parsing
+    - beautifulsoup4
+    - requests
+    - PyYAML
+    - Jinja2
+    - traitlets
