@@ -9,6 +9,13 @@ on:
       - scripts/revision_audit.py
       - .github/workflows/revision-audit.yml
       - data/**
+  pull_request:
+    branches:
+      - main
+    paths:
+      - scripts/revision_audit.py
+      - .github/workflows/revision-audit.yml
+      - data/**
 
 jobs:
   audit:
