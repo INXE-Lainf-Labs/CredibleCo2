@@ -6,19 +6,19 @@ on:
       epochs:
         description: Training epochs
         required: false
-        default: '5'
+        default: '20'
       max_train_windows:
-        description: Maximum training windows
+        description: Maximum training windows; large default means all available windows
         required: false
-        default: '100000'
+        default: '999999999'
       max_validation_windows:
-        description: Maximum validation windows
+        description: Maximum validation windows; large default means all available windows
         required: false
-        default: '50000'
+        default: '999999999'
       max_test_windows:
-        description: Maximum test windows
+        description: Maximum test windows; large default means all available windows
         required: false
-        default: '100000'
+        default: '999999999'
   push:
     branches:
       - revision-r2-reviewer3-4
@@ -69,10 +69,10 @@ jobs:
 
       - name: Run corrected emissions LSTM on CPU
         env:
-          EPOCHS: ${{ inputs.epochs || '5' }}
-          MAX_TRAIN: ${{ inputs.max_train_windows || '100000' }}
-          MAX_VALIDATION: ${{ inputs.max_validation_windows || '50000' }}
-          MAX_TEST: ${{ inputs.max_test_windows || '100000' }}
+          EPOCHS: ${{ inputs.epochs || '20' }}
+          MAX_TRAIN: ${{ inputs.max_train_windows || '999999999' }}
+          MAX_VALIDATION: ${{ inputs.max_validation_windows || '999999999' }}
+          MAX_TEST: ${{ inputs.max_test_windows || '999999999' }}
         run: |
           python scripts/run_revision_lstm_cpu.py \
             --dataset ${{ matrix.dataset }} \
@@ -84,10 +84,10 @@ jobs:
       - name: Run corrected EV feature LSTM on CPU
         if: matrix.dataset == 'ev'
         env:
-          EPOCHS: ${{ inputs.epochs || '5' }}
-          MAX_TRAIN: ${{ inputs.max_train_windows || '100000' }}
-          MAX_VALIDATION: ${{ inputs.max_validation_windows || '50000' }}
-          MAX_TEST: ${{ inputs.max_test_windows || '100000' }}
+          EPOCHS: ${{ inputs.epochs || '20' }}
+          MAX_TRAIN: ${{ inputs.max_train_windows || '999999999' }}
+          MAX_VALIDATION: ${{ inputs.max_validation_windows || '999999999' }}
+          MAX_TEST: ${{ inputs.max_test_windows || '999999999' }}
         run: |
           python scripts/run_revision_lstm_cpu.py \
             --dataset ev \
