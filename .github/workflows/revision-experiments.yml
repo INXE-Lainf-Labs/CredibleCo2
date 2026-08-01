@@ -26,6 +26,13 @@ on:
       - src/revision_protocol.py
       - scripts/run_revision_experiments.py
       - .github/workflows/revision-experiments.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - src/revision_protocol.py
+      - scripts/run_revision_experiments.py
+      - .github/workflows/revision-experiments.yml
 
 jobs:
   experiments:
