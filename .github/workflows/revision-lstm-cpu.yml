@@ -46,6 +46,9 @@ jobs:
       matrix:
         dataset: [qx50, blazer, pacifica, ev]
 
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -60,6 +63,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install numpy pandas scikit-learn
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Verify repository imports
+        run: python -c "from src.models.LSTM import MultipleLayerLSTM; from src.revision_protocol import DATASETS; print('imports ok')"
 
       - name: Run corrected emissions LSTM on CPU
         env:
