@@ -1,9 +1,9 @@
 name: Export Restored Revision Results
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
+      - revision-r2-reviewer3-4
     paths:
       - .github/workflows/revision-export-restored-results.yml
   workflow_dispatch:
