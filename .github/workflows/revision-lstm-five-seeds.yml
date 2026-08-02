@@ -1,0 +1,95 @@
+name: Revision LSTM Five Seeds
+
+on:
+  workflow_dispatch:
+    inputs:
+      epochs:
+        description: Training epochs per seed
+        required: false
+        default: '20'
+  push:
+    branches:
+      - revision-r2-reviewer3-4
+    paths:
+      - scripts/run_revision_lstm_multiseed.py
+      - .github/workflows/revision-lstm-five-seeds.yml
+
+jobs:
+  lstm-five-seeds:
+    name: ${{ matrix.dataset }} training seed ${{ matrix.training_seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        dataset: [ev, qx50, blazer, pacifica]
+        training_seed: [20260801, 20260802, 20260803, 20260804, 20260805]
+
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+      SPLIT_SEED: '20260801'
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy pandas scikit-learn
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Verify multiseed runner imports
+        run: |
+          python -m py_compile scripts/run_revision_lstm_multiseed.py
+          python -c "import scripts.run_revision_lstm_multiseed; print('multiseed imports ok')"
+
+      - name: Run full-data LSTM training seed
+        env:
+          EPOCHS: ${{ inputs.epochs || '20' }}
+        run: |
+          python scripts/run_revision_lstm_multiseed.py \
+            --dataset "${{ matrix.dataset }}" \
+            --split-seed "$SPLIT_SEED" \
+            --training-seed "${{ matrix.training_seed }}" \
+            --epochs "$EPOCHS"
+
+      - name: Verify seed artifact metadata
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          dataset = "${{ matrix.dataset }}"
+          training_seed = int("${{ matrix.training_seed }}")
+          path = Path("artifacts/revision_lstm_multiseed") / f"{dataset}_emissions_seed{training_seed}.json"
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          assert payload["split_seed"] == 20260801
+          assert payload["training_seed"] == training_seed
+          assert payload["split_manifest"]["seed"] == 20260801
+          assert payload["used_window_counts"] == payload["full_window_counts"]
+          assert payload["checkpoint_selection"]["policy"] == "minimum_validation_mse"
+          assert payload["checkpoint_selection"]["test_set_used_for_selection"] is False
+          assert payload["checkpoint_selection"]["restored_before_primary_test_evaluation"] is True
+          print(json.dumps({
+              "dataset": dataset,
+              "split_seed": payload["split_seed"],
+              "training_seed": payload["training_seed"],
+              "best_epoch": payload["checkpoint_selection"]["best_epoch"],
+              "test_mae": payload["test"]["mae"],
+          }, indent=2))
+          PY
+
+      - name: Upload multiseed artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: revision-lstm-five-seeds-${{ matrix.dataset }}-${{ matrix.training_seed }}
+          path: artifacts/revision_lstm_multiseed/${{ matrix.dataset }}_emissions_seed${{ matrix.training_seed }}*
+          if-no-files-found: error
+          retention-days: 90
