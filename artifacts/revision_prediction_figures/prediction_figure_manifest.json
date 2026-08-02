@@ -541,7 +541,7 @@
       "bytes": 967529
     },
     "figure_lstm_predictions_median_test_trips.pdf": {
-      "sha256": "bfc930cbb0ceedb5dc6ba42d189c75aeba6849bc64e5057440e282725315f845",
+      "sha256": "697f783176cb001a43d0dbe5abf4b2294364471319b35f59f87fd82c25188e4c",
       "bytes": 576829
     },
     "figure_lstm_parity_full_test_sets.png": {
@@ -549,7 +549,7 @@
       "bytes": 898602
     },
     "figure_lstm_parity_full_test_sets.pdf": {
-      "sha256": "4222ff6cb5cf09c7cf869fcfa5a84b75a72e02485f2074af83f7d617e77112df",
+      "sha256": "24bf4f45971d7b89fabf3ed45d2588322999a1a1b2b3dab870dd9a67f60c0a7b",
       "bytes": 55975
     },
     "figure_lstm_training_validation_five_seeds.png": {
@@ -557,7 +557,7 @@
       "bytes": 349218
     },
     "figure_lstm_training_validation_five_seeds.pdf": {
-      "sha256": "e2282a439d4937bf6b35996c265386c7f1be5cfb0cf9786f155e73461903d2a5",
+      "sha256": "60baec77de9bd947140940b42766f7c4ca07715d2507dd3d20d7f38c21a2f1f9",
       "bytes": 20036
     },
     "blazer_median_length_test_trip_predictions.csv": {
