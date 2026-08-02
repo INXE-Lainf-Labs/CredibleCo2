@@ -93,10 +93,19 @@ jobs:
           git add artifacts/revision_restored_results
           if git diff --cached --quiet; then
             echo "No restored-result changes to commit"
-          else
-            git commit -m "Restore complete corrected result set"
-            git push origin "HEAD:${TARGET_BRANCH}"
+            exit 0
           fi
+          git commit -m "Restore complete corrected result set"
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin "$TARGET_BRANCH"
+            if git push origin "HEAD:${TARGET_BRANCH}"; then
+              exit 0
+            fi
+            echo "Concurrent branch update detected; retrying (${attempt}/5)"
+            sleep $((attempt * 5))
+          done
+          echo "Unable to publish restored results after five attempts" >&2
+          exit 1
 
       - name: Upload restored result package
         uses: actions/upload-artifact@v4
