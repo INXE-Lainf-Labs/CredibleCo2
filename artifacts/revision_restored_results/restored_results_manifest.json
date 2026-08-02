@@ -450,7 +450,7 @@
       "bytes": 132472
     },
     "figure_training_pacifica.pdf": {
-      "sha256": "77ebc76ef39201462dad5fc50e69937cf3037fd6a4141dfb27e4baa6ebe43e43",
+      "sha256": "58138f5f0db54807072edafac9c4552e22e004a54fbe8a2618c5367be3000e39",
       "bytes": 13465
     },
     "figure_training_pacifica.tiff": {
@@ -462,7 +462,7 @@
       "bytes": 443113
     },
     "figure_best_worst_pacifica.pdf": {
-      "sha256": "67a3cc5f0f693a9717cbadb8eca481cc552aade9acbdb2c9c522af1dd0cfb3d0",
+      "sha256": "5905b07fc89737a2ce7ffc3483fb2a345574302b4bfc64989d71f0177c5fa265",
       "bytes": 275292
     },
     "figure_best_worst_pacifica.tiff": {
@@ -474,7 +474,7 @@
       "bytes": 120832
     },
     "figure_training_blazer.pdf": {
-      "sha256": "665fa91becf36d15b317a33d65ee0aeef7f07aef3d2e2112f88b26230ccae92d",
+      "sha256": "71f6d3e642764eff95441523a06e23be00b7b40b9960d1fd1b533cd579b405bc",
       "bytes": 13509
     },
     "figure_training_blazer.tiff": {
@@ -486,7 +486,7 @@
       "bytes": 421445
     },
     "figure_best_worst_blazer.pdf": {
-      "sha256": "4e012faed19d90892e42c47c1fac701317a9722560d8d4b98321bdb1d68f7438",
+      "sha256": "266d688742bdee194a7ee978bbc7ec4e6c9c15638a308b9efa31a4156be82997",
       "bytes": 325772
     },
     "figure_best_worst_blazer.tiff": {
@@ -498,7 +498,7 @@
       "bytes": 124805
     },
     "figure_training_qx50.pdf": {
-      "sha256": "28ce90dedb1552677f585052c2409216e3a8acd8e60fc5777ea141b93607032f",
+      "sha256": "e9b1dcaf3e69a5270b8a8bee021c9cc213a68167fd85a13b14cb16fcff5a55f5",
       "bytes": 13402
     },
     "figure_training_qx50.tiff": {
@@ -510,7 +510,7 @@
       "bytes": 355377
     },
     "figure_best_worst_qx50.pdf": {
-      "sha256": "8bc0aca36d69b7a7d78fcacd51467a53c271ee881120308faa8d9ac32dc182c5",
+      "sha256": "7df807e267deac0ebc0d62c5b1021e275d2a2d61b16e3deee98d163526a4c370",
       "bytes": 293730
     },
     "figure_best_worst_qx50.tiff": {
@@ -522,7 +522,7 @@
       "bytes": 190596
     },
     "figure_training_ev_emissions_features.pdf": {
-      "sha256": "fc8a00a4927692d92bfe7c47dd7feff4860eaa80a17de7b0cb302096b8b94118",
+      "sha256": "bc7fcbbe07e72618054f43ee4c45f1ad984aa77b7c2f81eb8f022808688196d8",
       "bytes": 15158
     },
     "figure_training_ev_emissions_features.tiff": {
@@ -534,7 +534,7 @@
       "bytes": 486579
     },
     "figure_ev_torque_throttle_measured_predicted.pdf": {
-      "sha256": "6709a906d58f0b1f84605a08552dacfd630d5436fd9681a6cc40804009c2c56d",
+      "sha256": "6ba95cf64c89a5820c3fea5add4795317af5ba72a419c10c57e0a374c1acef03",
       "bytes": 107475
     },
     "figure_ev_torque_throttle_measured_predicted.tiff": {
@@ -546,7 +546,7 @@
       "bytes": 535062
     },
     "figure_ev_direct_proxy_observed.pdf": {
-      "sha256": "9dc1ab66fcd1a6cce9f8b9e335dcc2d01bb42bb5bc8d7a9685df871d428211db",
+      "sha256": "e960f4e07dba4e7b9db6c16c21f667efa187e09569873a273800dcc21d8f1939",
       "bytes": 98846
     },
     "figure_ev_direct_proxy_observed.tiff": {
