@@ -1,0 +1,47 @@
+name: Revision feature-model head-to-head
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - revision-r2-reviewer3-4
+    paths:
+      - src/revision_protocol.py
+      - scripts/run_revision_experiments.py
+      - scripts/run_revision_feature_model_head_to_head.py
+      - .github/workflows/revision-feature-model-head-to-head.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - src/revision_protocol.py
+      - scripts/run_revision_experiments.py
+      - scripts/run_revision_feature_model_head_to_head.py
+      - .github/workflows/revision-feature-model-head-to-head.yml
+
+jobs:
+  feature-model-benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip numpy pandas scipy scikit-learn
+
+      - name: Run full-data EV feature-model benchmark
+        run: python scripts/run_revision_feature_model_head_to_head.py
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: revision-feature-model-head-to-head
+          path: artifacts/revision_feature_model_head_to_head/*
+          if-no-files-found: error
