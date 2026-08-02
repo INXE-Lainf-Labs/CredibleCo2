@@ -95,3 +95,5 @@ jobs:
             artifacts/revision_lstm_cpu_summary.md
           if-no-files-found: error
           retention-days: 90
+
+# Triggered after workflow registration so the pull-request event can execute it.
