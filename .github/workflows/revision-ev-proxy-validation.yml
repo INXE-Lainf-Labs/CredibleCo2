@@ -1,0 +1,102 @@
+name: Revision EV Proxy Validation
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - scripts/run_revision_ev_proxy_validation.py
+      - .github/workflows/revision-ev-proxy-validation.yml
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_RUN_ID: '30725904091'
+      TARGET_BRANCH: revision-r2-reviewer3-4
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - name: Check out revision branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy pandas scikit-learn matplotlib
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Download audited EV checkpoints
+        run: |
+          rm -rf downloaded-ev
+          mkdir -p downloaded-ev
+          gh run download "$SOURCE_RUN_ID" --name revision-lstm-cpu-ev --dir downloaded-ev
+          test -f downloaded-ev/ev_emissions_best.pt
+          test -f downloaded-ev/ev_feature_best.pt
+          test -f downloaded-ev/ev_emissions.json
+          test -f downloaded-ev/ev_feature.json
+
+      - name: Run corrected proxy validation
+        run: |
+          rm -rf artifacts/revision_ev_proxy_validation
+          python scripts/run_revision_ev_proxy_validation.py \
+            --emissions-checkpoint downloaded-ev/ev_emissions_best.pt \
+            --feature-checkpoint downloaded-ev/ev_feature_best.pt \
+            --emissions-result downloaded-ev/ev_emissions.json \
+            --feature-result downloaded-ev/ev_feature.json \
+            --output-dir artifacts/revision_ev_proxy_validation \
+            --batch-size 2048 \
+            --threads 4
+
+      - name: Verify result
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('artifacts/revision_ev_proxy_validation/ev_proxy_validation.json')
+          d = json.loads(p.read_text(encoding='utf-8'))
+          assert d['status'] == 'completed_corrected_ev_proxy_validation'
+          assert d['split_seed'] == 20260801
+          assert d['validation_selected_checkpoints'] is True
+          assert d['test_set_used_for_model_selection'] is False
+          assert d['all_eligible_aligned_test_windows_used'] is True
+          assert d['global']['n_windows'] > 0
+          print(json.dumps(d['global'], indent=2))
+          PY
+          test -f artifacts/revision_ev_proxy_validation/figure_ev_proxy_validation_corrected.png
+          test -f artifacts/revision_ev_proxy_validation/figure_ev_proxy_validation_corrected.pdf
+          test -f artifacts/revision_ev_proxy_validation/ev_proxy_trip_metrics.csv
+
+      - name: Commit corrected proxy artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add artifacts/revision_ev_proxy_validation
+          if git diff --cached --quiet; then
+            echo "No proxy artifacts to commit"
+          else
+            git commit -m "Recompute corrected EV proxy validation"
+            git push origin "HEAD:${TARGET_BRANCH}"
+          fi
+
+      - name: Upload proxy validation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: revision-corrected-ev-proxy-validation
+          path: artifacts/revision_ev_proxy_validation
+          if-no-files-found: error
+          retention-days: 90
