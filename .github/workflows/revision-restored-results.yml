@@ -6,6 +6,7 @@ on:
       - revision-r2-reviewer3-4
     paths:
       - scripts/build_revision_restored_results.py
+      - scripts/recompute_ev_test_sensitivity.py
       - .github/workflows/revision-restored-results.yml
   workflow_dispatch:
 
@@ -64,6 +65,12 @@ jobs:
             --batch-size 2048 \
             --threads 4
 
+      - name: Recompute electricity-factor sensitivity on corrected test trips
+        run: |
+          rm -rf artifacts/revision_ev_electricity_sensitivity
+          python scripts/recompute_ev_test_sensitivity.py \
+            --output-dir artifacts/revision_ev_electricity_sensitivity
+
       - name: Verify outputs
         run: |
           test "$(find artifacts/revision_restored_results -maxdepth 1 -name 'figure_*.png' | wc -l)" -eq 9
@@ -72,6 +79,9 @@ jobs:
           test -f artifacts/revision_restored_results/table_bootstrap_complete.csv
           test -f artifacts/revision_restored_results/table_ev_trip_metrics_complete.csv
           test -f artifacts/revision_restored_results/restored_tables_corrected.tex
+          test -f artifacts/revision_ev_electricity_sensitivity/electricity_factor_sensitivity_test_trips.csv
+          test -f artifacts/revision_ev_electricity_sensitivity/ev_test_trip_totals.csv
+          test -f artifacts/revision_ev_electricity_sensitivity/sensitivity_manifest.json
           python - <<'PY'
           import json
           from pathlib import Path
@@ -83,19 +93,24 @@ jobs:
           diff = next(r for r in x['bootstrap_summary'] if r['metric'] == 'Proxy - direct')
           assert diff['mean'] > 0 and diff['ci_low'] > 0
           assert x['protocol_checks']['test_set_used_for_model_selection'] is False
-          print(json.dumps({'proxy_minus_direct': diff, 'files': len(x['generated_files'])}, indent=2))
+          s = json.loads(Path('artifacts/revision_ev_electricity_sensitivity/sensitivity_manifest.json').read_text(encoding='utf-8'))
+          assert s['status'] == 'completed_ev_test_trip_sensitivity'
+          assert s['split_seed'] == 20260801
+          assert s['n_test_trips'] == 14
+          assert abs(s['previous_total_difference_gco2']) < 1.0
+          print(json.dumps({'proxy_minus_direct': diff, 'sensitivity': s['scenario_summary']}, indent=2))
           PY
 
       - name: Commit regenerated results
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add artifacts/revision_restored_results
+          git add artifacts/revision_restored_results artifacts/revision_ev_electricity_sensitivity
           if git diff --cached --quiet; then
             echo "No restored-result changes to commit"
             exit 0
           fi
-          git commit -m "Restore complete corrected result set"
+          git commit -m "Restore corrected results and EV test sensitivity"
           for attempt in 1 2 3 4 5; do
             git pull --rebase origin "$TARGET_BRANCH"
             if git push origin "HEAD:${TARGET_BRANCH}"; then
@@ -111,6 +126,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: revision-restored-results
-          path: artifacts/revision_restored_results
+          path: |
+            artifacts/revision_restored_results
+            artifacts/revision_ev_electricity_sensitivity
           if-no-files-found: error
           retention-days: 90
