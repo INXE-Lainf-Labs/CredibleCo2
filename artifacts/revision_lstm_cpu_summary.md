@@ -1,17 +1,21 @@
-# Corrected-protocol LSTM results: full-data, validation-selected checkpoints
+# Corrected-protocol results: full-data LSTMs and exact head-to-head benchmarks
 
-GitHub Actions run: `Revision LSTM CPU` #10 (`30725904091`), commit `14cb004b1f8870f59075103ab33bb6b365bbbc67`.
+Canonical LSTM run: GitHub Actions `Revision LSTM CPU` #10 (`30725904091`), commit `14cb004b1f8870f59075103ab33bb6b365bbbc67`.
+
+Exact EV/QX50 benchmark run: GitHub Actions `Revision full-data head-to-head` #2 (`30727389646`), commit `05ff4f11a68122edf6efb8ce7c774047a312ac1c`.
 
 ## Audit status
 
-- All four dataset jobs completed successfully, including the EV torque/throttle feature model.
-- Every model ran for 20 epochs with batch size 512 and used all available windows.
+- All four LSTM dataset jobs completed successfully, including the EV torque/throttle feature model.
+- Every LSTM ran for 20 epochs with batch size 512 and used all available windows.
 - Complete trip IDs are disjoint across training, validation, and test.
-- The feature scaler is fitted only on training-trip rows; windows are created independently inside each trip after the split.
-- The primary test result restores the checkpoint with minimum validation MSE. The test set is not used for checkpoint selection.
-- A valid PyTorch checkpoint and SHA-256 digest were verified for each model.
+- Feature scalers are fitted only on training-trip rows; windows are created independently inside each trip after the split.
+- The primary LSTM test result restores the checkpoint with minimum validation MSE. The test set is not used for checkpoint selection.
+- A valid PyTorch checkpoint and SHA-256 digest were verified for each LSTM.
+- The exact EV and QX50 non-recurrent benchmarks use the identical trip manifests and complete train/validation/test window sets used by the corresponding LSTMs.
+- Non-recurrent model choice is made by minimum validation MAE. The artifacts explicitly record `test_set_used_for_selection: false`.
 
-## Primary test results
+## Canonical LSTM results
 
 | Dataset / task | Windows train / val / test | Best epoch | Best val MSE | Test MAE | Test RMSE | Test R2 |
 |---|---:|---:|---:|---:|---:|---:|
@@ -26,74 +30,72 @@ GitHub Actions run: `Revision LSTM CPU` #10 (`30725904091`), commit `14cb004b1f8
 | Dataset / task | Selected MAE | Last-epoch MAE | Selected RMSE | Last-epoch RMSE | Selected R2 | Last-epoch R2 |
 |---|---:|---:|---:|---:|---:|---:|
 | BMW i3 — emissions | 0.016999224 | 0.018080286 | 0.030245076 | 0.035057248 | 0.955440 | 0.940132 |
-| Infiniti QX50 — emissions | 0.15130749 | 0.1523663 | 0.25643459 | 0.25733075 | 0.967146 | 0.966916 |
+| Infiniti QX50 — emissions | 0.15130749 | 0.15236630 | 0.25643459 | 0.25733075 | 0.967146 | 0.966916 |
 | Chevrolet Blazer — emissions | 0.13710105 | 0.14013464 | 0.23035044 | 0.23336242 | 0.784379 | 0.778703 |
 | Chrysler Pacifica — emissions | 0.92454867 | 1.4726813 | 1.4117892 | 2.4717857 | 0.717932 | 0.135360 |
 | BMW i3 — torque/throttle | 4.1758483 | 4.1454332 | 7.6642369 | 7.6313938 | 0.928868 | 0.929476 |
 
-The Pacifica result confirms the need for checkpoint restoration: epoch 2 gives MAE 0.92455 and R2 0.71793, whereas the epoch-20 model gives MAE 1.47268 and R2 0.13536. For the EV feature model, epoch 19 is retained because it minimizes validation MSE, although epoch 20 is marginally better on the test set; using epoch 20 would be test-driven selection.
+The Pacifica result confirms the need for checkpoint restoration: the validation-selected epoch-2 model gives R2 0.717932, whereas the epoch-20 model gives R2 0.135360. For the EV feature model, epoch 19 remains canonical because it minimizes validation MSE, even though epoch 20 is marginally better on the test set.
 
-## Trip-level robustness
+## Exact full-data EV and QX50 head-to-head
 
-| Dataset / task | Test trips | Mean MAE | Median | Sample SD | IQR | 95% bootstrap CI for mean |
-|---|---:|---:|---:|---:|---:|---:|
-| BMW i3 — emissions | 14 | 0.017579487 | 0.017268661 | 0.0046336457 | [0.016214721, 0.020541181] | [0.015274022, 0.019917923] |
-| Infiniti QX50 — emissions | 7 | 0.1798102 | 0.13350457 | 0.077811262 | [0.12893391, 0.2354837] | [0.12853905, 0.2342749] |
-| Chevrolet Blazer — emissions | 2 | 0.13702057 | 0.13702057 | 0.00098580425 | [0.13667203, 0.1373691] | [0.1363235, 0.13771763] |
-| Chrysler Pacifica — emissions | 4 | 0.9882495 | 1.0338004 | 0.24324873 | [0.83386122, 1.1881886] | [0.78787896, 1.18862] |
-| BMW i3 — torque/throttle | 14 | 3.9141846 | 3.4077668 | 1.4469537 | [3.2326418, 3.6501129] | [3.3425206, 4.7621337] |
+Both exact benchmarks use velocity, throttle, and motor torque, matching the emissions LSTM inputs. They use every available window and exactly the same complete-trip split as the LSTM.
 
-## Preliminary benchmark and input-ablation context
+### BMW i3
 
-The benchmark artifacts use the same trip manifests and training-only scaling. However, the benchmark workflow capped training at 200,000 windows, validation at 100,000, and test at 150,000. Blazer and Pacifica were below these caps; QX50 used all validation/test windows but a capped training set; EV used capped training, validation, and test sets. Therefore, EV and QX50 comparisons below are informative but should not be presented as an exact full-data head-to-head table without regenerating the benchmark evaluation on all test windows.
+Windows: 691,930 train / 216,951 validation / 185,212 test.
 
-### Best benchmark per input set, selected by validation MAE
+| Model | Validation MAE | Test MAE | Test RMSE | Test R2 |
+|---|---:|---:|---:|---:|
+| Training mean | 0.094612068 | 0.097688090 | 0.14331541 | -0.000520 |
+| Ridge | 0.071863793 | 0.072637266 | 0.10748436 | 0.437230 |
+| Histogram gradient boosting | 0.021400455 | 0.018177079 | 0.035018648 | 0.940264 |
+| Random forest | 0.020807186 | 0.017436869 | 0.034952413 | 0.940489 |
+| **MLP — selected by validation MAE** | **0.020659138** | **0.017710154** | **0.033168917** | **0.946408** |
+| LSTM validation-selected checkpoint | — | 0.016999224 | 0.030245076 | 0.955440 |
 
-| Dataset | Input set | Selected model | Test MAE | Test RMSE | Test R2 |
-|---|---|---|---:|---:|---:|
-| BMW i3 | `speed_only` | mlp | 0.046487144 | 0.0675317 | 0.777745 |
-| BMW i3 | `shared_observed_context` | hist_gb | 0.020660795 | 0.031608312 | 0.951310 |
-| BMW i3 | `actuation_inputs` | random_forest | 0.017680974 | 0.035201102 | 0.939612 |
-| BMW i3 | `all_observed_inputs` | random_forest | 0.0094860713 | 0.01620024 | 0.987210 |
-| Infiniti QX50 | `speed_only` | mlp | 0.38730825 | 0.61057726 | 0.813742 |
-| Infiniti QX50 | `shared_observed_context` | random_forest | 0.346011 | 0.53171348 | 0.858750 |
-| Infiniti QX50 | `actuation_inputs` | random_forest | 0.12999971 | 0.226166 | 0.974444 |
-| Infiniti QX50 | `all_observed_inputs` | random_forest | 0.1067211 | 0.21233848 | 0.977474 |
-| Chevrolet Blazer | `speed_only` | random_forest | 0.31596656 | 0.46423555 | 0.124231 |
-| Chevrolet Blazer | `shared_observed_context` | hist_gb | 0.61602738 | 0.84267322 | -1.885568 |
-| Chevrolet Blazer | `actuation_inputs` | random_forest | 0.11400737 | 0.19996334 | 0.837515 |
-| Chevrolet Blazer | `all_observed_inputs` | random_forest | 0.12052499 | 0.20989784 | 0.820969 |
-| Chrysler Pacifica | `speed_only` | mlp | 1.2054086 | 1.8082881 | 0.537247 |
-| Chrysler Pacifica | `shared_observed_context` | mlp | 1.4249646 | 1.955422 | 0.458879 |
-| Chrysler Pacifica | `actuation_inputs` | ridge | 0.56747335 | 0.98569287 | 0.862502 |
-| Chrysler Pacifica | `all_observed_inputs` | ridge | 0.58183732 | 0.99989105 | 0.858512 |
+The LSTM is numerically better than the validation-selected MLP on all three aggregate test metrics. Its MAE is approximately 4.0% lower. The trip-level bootstrap intervals overlap substantially: LSTM mean MAE 0.017579 [0.015274, 0.019918] and MLP mean MAE 0.018420 [0.015714, 0.021045]. This is a descriptive difference, not evidence of statistically established superiority.
 
-### LSTM versus the best actuation-input benchmark
+### Infiniti QX50
 
-Both models use velocity, throttle, and motor torque. Model choice among the non-recurrent benchmarks is based on validation MAE.
+Windows: 227,341 train / 74,676 validation / 74,790 test.
 
-| Dataset | LSTM MAE | Best benchmark | Benchmark MAE | Lower MAE |
+| Model | Validation MAE | Test MAE | Test RMSE | Test R2 |
+|---|---:|---:|---:|---:|
+| Training mean | 1.4270941 | 1.3112796 | 1.5630509 | -0.220615 |
+| Ridge | 0.36434833 | 0.26663110 | 0.38700717 | 0.925171 |
+| Histogram gradient boosting | 0.12639428 | 0.14144617 | 0.23527117 | 0.972345 |
+| **Random forest — selected by validation MAE** | **0.11398306** | **0.12850532** | **0.22372522** | **0.974993** |
+| MLP | 0.12722143 | 0.14925553 | 0.25100869 | 0.968522 |
+| LSTM validation-selected checkpoint | — | 0.15130749 | 0.25643459 | 0.967146 |
+
+The validation-selected random forest is numerically better than the LSTM on all three aggregate test metrics. Its MAE is approximately 15.1% lower. The trip-level bootstrap intervals again overlap substantially: random-forest mean MAE 0.164045 [0.109123, 0.231796] and LSTM mean MAE 0.179810 [0.128539, 0.234275]. This does not establish a statistically resolved difference.
+
+## Exact actuation-input comparison across all four vehicles
+
+For Blazer and Pacifica, the broader benchmark run already used every available window because their datasets were below the configured caps. EV and QX50 are replaced here by the exact uncapped results.
+
+| Dataset | LSTM MAE | Validation-selected benchmark | Benchmark MAE | Numerically lower MAE |
 |---|---:|---|---:|---|
-| BMW i3 | 0.016999224 | random_forest | 0.017680974 | LSTM |
-| Infiniti QX50 | 0.15130749 | random_forest | 0.12999971 | random_forest |
-| Chevrolet Blazer | 0.13710105 | random_forest | 0.11400737 | random_forest |
-| Chrysler Pacifica | 0.92454867 | ridge | 0.56747335 | ridge |
+| BMW i3 | 0.016999224 | MLP | 0.017710154 | LSTM |
+| Infiniti QX50 | 0.15130749 | Random forest | 0.12850532 | Random forest |
+| Chevrolet Blazer | 0.13710105 | Random forest | 0.11400737 | Random forest |
+| Chrysler Pacifica | 0.92454867 | Ridge | 0.56747335 | Ridge |
 
-The ablation consistently shows that speed alone is insufficient relative to actuation inputs. It does not establish equivalence of operating conditions, because road grade, payload, wind, driver identity, and transmission state are unavailable. More observed variables also do not always improve held-out-trip performance, which is consistent with route-level distribution shift and supports cautious, non-causal wording.
+The corrected evidence does not support a general claim that the LSTM is superior to conventional regressors. It supports reporting the LSTM as one predictive model under the corrected protocol, with dataset-dependent relative performance.
 
-## Checkpoint integrity
+## Broader input-ablation context
 
-| Model | Checkpoint | SHA-256 |
-|---|---|---|
-| `ev-emissions` | `ev_emissions_best.pt` | `055d8f143a6ed090d9905e77fb4ddc5bd5509ffab87edf861a84b6d91320716a` |
-| `qx50-emissions` | `qx50_emissions_best.pt` | `82e1c9934e078b39c2f4ca79b85d37e2eb6f2bd0293ac11fabd4049d63720774` |
-| `blazer-emissions` | `blazer_emissions_best.pt` | `795da5f17f4a0accc63dd7d894f47a09ee7ecc9d065d4ae9563f362ed8be76a9` |
-| `pacifica-emissions` | `pacifica_emissions_best.pt` | `4df95d487b8e2e7d91f557cc90df55e673f083339fadd077da5f8c7cc545a2c9` |
-| `ev-feature` | `ev_feature_best.pt` | `0a110c7be32c35895e559ea1fcc07cbaea739fc3cf334695b119619a2ed96272` |
+The broader ablation compares speed only, shared observed context, actuation inputs, and all observed inputs. For EV and QX50, those exploratory ablation runs used window caps; the exact uncapped results above resolve the actuation-input head-to-head required for a fair LSTM comparison. Blazer and Pacifica remained below the caps.
+
+The ablation supports the narrower conclusion that speed alone is not generally sufficient relative to actuation inputs. It does not establish equivalence of operating conditions, because road grade, payload, wind, driver identity, and transmission state are unavailable. More observed variables also do not always improve held-out-trip performance, which is consistent with route-level distribution shift and supports cautious, non-causal wording.
 
 ## Reporting decision
 
 - Use the validation-selected checkpoint metrics as the canonical LSTM results.
 - Keep last-epoch metrics only as an audit/sensitivity result.
-- Treat the existing benchmark/ablation comparison as preliminary for EV and QX50 because of window caps; Blazer and Pacifica are full-window comparisons.
-- Do not describe the comparison as causal or as identical operating conditions. Use “comparison conditioned on the observed shared covariates.”
+- Use the uncapped EV and QX50 benchmark results for the exact actuation-input comparison; use the existing full-window Blazer and Pacifica results.
+- State explicitly that non-recurrent model selection used validation MAE and that the test set was not used for selection.
+- Do not claim general LSTM superiority: the LSTM is numerically best only for the BMW i3 in this comparison.
+- Do not interpret overlapping trip-bootstrap intervals as proof of equivalence or significance.
+- Do not describe the vehicle comparison as causal or as identical operating conditions. Use “comparison conditioned on the observed shared covariates.”
