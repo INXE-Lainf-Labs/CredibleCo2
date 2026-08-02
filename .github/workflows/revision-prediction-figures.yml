@@ -72,10 +72,16 @@ jobs:
           from pathlib import Path
           p = Path('artifacts/revision_prediction_figures/prediction_figure_manifest.json')
           payload = json.loads(p.read_text(encoding='utf-8'))
+          checks = payload['protocol_checks']
           assert payload['status'] == 'completed_regenerated_prediction_figures'
           assert payload['split_seed'] == 20260801
           assert payload['training_seeds'] == [20260801, 20260802, 20260803, 20260804, 20260805]
-          assert all(payload['protocol_checks'].values())
+          assert checks['complete_trip_split'] is True
+          assert checks['training_only_feature_scaler'] is True
+          assert checks['all_test_windows_used'] is True
+          assert checks['validation_selected_checkpoints'] is True
+          assert checks['test_set_used_for_model_selection'] is False
+          assert checks['representative_trip_selected_without_targets_or_predictions'] is True
           assert len(payload['datasets']) == 4
           print(json.dumps({
               'datasets': [d['dataset'] for d in payload['datasets']],
