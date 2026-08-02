@@ -99,3 +99,29 @@ The ablation supports the narrower conclusion that speed alone is not generally 
 - Do not claim general LSTM superiority: the LSTM is numerically best only for the BMW i3 in this comparison.
 - Do not interpret overlapping trip-bootstrap intervals as proof of equivalence or significance.
 - Do not describe the vehicle comparison as causal or as identical operating conditions. Use “comparison conditioned on the observed shared covariates.”
+
+<!-- FIVE_SEED_RESULTS_START -->
+## Five-seed fixed-split LSTM robustness study
+
+GitHub Actions `Revision LSTM Five Seeds` run `30742131505` completed all 20 jobs successfully. The complete-trip split is fixed with `split_seed=20260801`; training seeds `20260801`–`20260805` vary model initialization and minibatch order only.
+
+Audit checks passed for every artifact: identical trip manifests within each dataset, all available windows, feature scaler fitted only on training-trip rows, checkpoint selected by minimum validation MSE, selected checkpoint restored before test evaluation, and no test-set use in model selection.
+
+| Dataset | MAE mean ± sample SD | MAE median [min, max] | RMSE mean ± sample SD | R2 mean ± sample SD | Best epochs |
+|---|---:|---:|---:|---:|---|
+| BMW i3 | 0.01790465 ± 0.001838746 | 0.017722719 [0.015595206, 0.020468385] | 0.029667757 ± 0.0029987745 | 0.95677402 ± 0.0086621145 | 9, 9, 13, 14, 14 |
+| Infiniti QX50 | 0.15449141 ± 0.0036553399 | 0.15606217 [0.1500752, 0.15876343] | 0.25975494 ± 0.0047864319 | 0.96628073 ± 0.001241985 | 19, 18, 19, 20, 19 |
+| Chevrolet Blazer | 0.13757026 ± 0.0034010254 | 0.13710105 [0.13330638, 0.14184047] | 0.23398074 ± 0.0070429564 | 0.77736788 ± 0.013483629 | 17, 19, 18, 12, 18 |
+| Chrysler Pacifica | 0.91359455 ± 0.099626502 | 0.87870148 [0.8249572, 1.0798166] | 1.4454613 ± 0.1360514 | 0.70222133 ± 0.057228902 | 2, 2, 4, 2, 1 |
+
+### Comparison with validation-selected non-recurrent baselines
+
+The canonical baseline CSV contains exact full-data selected baselines for BMW i3 and QX50. Blazer and Pacifica remain documented in the broader benchmark summary but are not represented as selected non-recurrent rows in that CSV.
+
+| Dataset | Five-seed LSTM mean MAE | Baseline | Baseline MAE | Mean MAE difference | Lower MAE |
+|---|---:|---|---:|---:|---|
+| BMW i3 | 0.01790465 | mlp | 0.017710154 | 0.00019449556 | mlp |
+| Infiniti QX50 | 0.15449141 | random_forest | 0.12850532 | 0.025986096 | random_forest |
+
+The five-seed analysis is the canonical robustness result. It should replace single-seed language when discussing LSTM performance variability. Comparisons remain descriptive because the five training seeds do not constitute independent test datasets and the vehicle comparison remains conditioned on observed covariates rather than causally matched operating conditions.
+<!-- FIVE_SEED_RESULTS_END -->
