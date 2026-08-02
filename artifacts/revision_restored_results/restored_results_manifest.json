@@ -1,0 +1,586 @@
+{
+  "status": "completed_restored_first_revision_results",
+  "split_seed": 20260801,
+  "training_seeds": [
+    20260801,
+    20260802,
+    20260803,
+    20260804,
+    20260805
+  ],
+  "window_size": 10,
+  "protocol_checks": {
+    "complete_trip_split": true,
+    "training_only_feature_scaler": true,
+    "windows_constructed_after_split_within_trip": true,
+    "validation_selected_checkpoints": true,
+    "test_set_used_for_model_selection": false,
+    "trip_bootstrap_resamples": 10000
+  },
+  "figure_mapping": {
+    "Figure 3": "figure_training_pacifica",
+    "Figure 4": "figure_training_blazer",
+    "Figure 5": "figure_training_qx50",
+    "Figure 6": "figure_best_worst_pacifica",
+    "Figure 7": "figure_best_worst_blazer",
+    "Figure 8": "figure_best_worst_qx50",
+    "Figure 9": "figure_training_ev_emissions_features",
+    "Figure 10": "figure_ev_torque_throttle_measured_predicted",
+    "Figure 11": "figure_ev_direct_proxy_observed"
+  },
+  "selection_rules": {
+    "icev_best_worst": "minimum/maximum mean held-out-trip MAE across five fixed-split training seeds",
+    "ev_feature_trip": "median feature-window count, trip-ID tie-breaker, independent of targets/predictions",
+    "ev_proxy_trip": "median aligned-window count, trip-ID tie-breaker, independent of targets/predictions"
+  },
+  "icev_trip_metrics": {
+    "qx50": [
+      {
+        "trip_id": "61907073",
+        "n_windows": 11892,
+        "mae_mean_across_seeds": 0.22109251405809688,
+        "mae_sample_sd_across_seeds": 0.010842718627579878,
+        "mae_min_across_seeds": 0.21132087548874776,
+        "mae_max_across_seeds": 0.23970413577645058,
+        "mae_seed_20260801": 0.2169905690017333,
+        "mae_seed_20260802": 0.21132087548874776,
+        "mae_seed_20260803": 0.21912991222431707,
+        "mae_seed_20260804": 0.23970413577645058,
+        "mae_seed_20260805": 0.21831707779923548
+      },
+      {
+        "trip_id": "61907049",
+        "n_windows": 2192,
+        "mae_mean_across_seeds": 0.2798389677719696,
+        "mae_sample_sd_across_seeds": 0.021806627915708626,
+        "mae_min_across_seeds": 0.25397681412253065,
+        "mae_max_across_seeds": 0.31433254843373803,
+        "mae_seed_20260801": 0.25397681412253065,
+        "mae_seed_20260802": 0.27484246703666926,
+        "mae_seed_20260803": 0.2755836139630227,
+        "mae_seed_20260804": 0.31433254843373803,
+        "mae_seed_20260805": 0.2804593953038872
+      },
+      {
+        "trip_id": "61907052",
+        "n_windows": 8114,
+        "mae_mean_across_seeds": 0.12795073745401736,
+        "mae_sample_sd_across_seeds": 0.0053460542692364225,
+        "mae_min_across_seeds": 0.12180688196372187,
+        "mae_max_across_seeds": 0.13331849878575375,
+        "mae_seed_20260801": 0.13331849878575375,
+        "mae_seed_20260802": 0.12877265073952193,
+        "mae_seed_20260803": 0.1327798775529697,
+        "mae_seed_20260804": 0.12307577822811944,
+        "mae_seed_20260805": 0.12180688196372187
+      },
+      {
+        "trip_id": "61907072",
+        "n_windows": 5545,
+        "mae_mean_across_seeds": 0.30468763935420834,
+        "mae_sample_sd_across_seeds": 0.011958491355730296,
+        "mae_min_across_seeds": 0.2887914459739213,
+        "mae_max_across_seeds": 0.322042203184664,
+        "mae_seed_20260801": 0.30163361336515226,
+        "mae_seed_20260802": 0.30354226367956244,
+        "mae_seed_20260803": 0.3074286705677417,
+        "mae_seed_20260804": 0.322042203184664,
+        "mae_seed_20260805": 0.2887914459739213
+      },
+      {
+        "trip_id": "61907050",
+        "n_windows": 7361,
+        "mae_mean_across_seeds": 0.12147987318450286,
+        "mae_sample_sd_across_seeds": 0.0034459710979563205,
+        "mae_min_across_seeds": 0.11797395655033852,
+        "mae_max_across_seeds": 0.12572996899123232,
+        "mae_seed_20260801": 0.12454931570968296,
+        "mae_seed_20260802": 0.11909831567815328,
+        "mae_seed_20260803": 0.12572996899123232,
+        "mae_seed_20260804": 0.12004780899310724,
+        "mae_seed_20260805": 0.11797395655033852
+      },
+      {
+        "trip_id": "61907068",
+        "n_windows": 20364,
+        "mae_mean_across_seeds": 0.10779488243146536,
+        "mae_sample_sd_across_seeds": 0.010842200838674324,
+        "mae_min_across_seeds": 0.09469801270787315,
+        "mae_max_across_seeds": 0.12049229293798235,
+        "mae_seed_20260801": 0.09469801270787315,
+        "mae_seed_20260802": 0.12049229293798235,
+        "mae_seed_20260803": 0.11711310373849332,
+        "mae_seed_20260804": 0.1010053040727935,
+        "mae_seed_20260805": 0.1056656987001844
+      },
+      {
+        "trip_id": "61907058",
+        "n_windows": 19322,
+        "mae_mean_across_seeds": 0.1291139672327262,
+        "mae_sample_sd_across_seeds": 0.0042403191829507615,
+        "mae_min_across_seeds": 0.12437939472826584,
+        "mae_max_across_seeds": 0.13350457763601078,
+        "mae_seed_20260801": 0.13350457763601078,
+        "mae_seed_20260802": 0.12928350858394957,
+        "mae_seed_20260803": 0.13308599645875555,
+        "mae_seed_20260804": 0.12531635875664918,
+        "mae_seed_20260805": 0.12437939472826584
+      }
+    ],
+    "blazer": [
+      {
+        "trip_id": "61908018.0",
+        "n_windows": 13709,
+        "mae_mean_across_seeds": 0.13709350087765432,
+        "mae_sample_sd_across_seeds": 0.0027725203412030932,
+        "mae_min_across_seeds": 0.13430983853501707,
+        "mae_max_across_seeds": 0.14069842642493896,
+        "mae_seed_20260801": 0.1363234918398204,
+        "mae_seed_20260802": 0.13489888964065128,
+        "mae_seed_20260803": 0.14069842642493896,
+        "mae_seed_20260804": 0.13923685794784388,
+        "mae_seed_20260805": 0.13430983853501707
+      },
+      {
+        "trip_id": "61908016.0",
+        "n_windows": 17288,
+        "mae_mean_across_seeds": 0.13794832076928437,
+        "mae_sample_sd_across_seeds": 0.00395717114413711,
+        "mae_min_across_seeds": 0.1325106558155643,
+        "mae_max_across_seeds": 0.14274607890464996,
+        "mae_seed_20260801": 0.13771763989642985,
+        "mae_seed_20260802": 0.13619067646568817,
+        "mae_seed_20260803": 0.14274607890464996,
+        "mae_seed_20260804": 0.14057655276408965,
+        "mae_seed_20260805": 0.1325106558155643
+      }
+    ],
+    "pacifica": [
+      {
+        "trip_id": "62001034",
+        "n_windows": 8730,
+        "mae_mean_across_seeds": 1.1719137273621312,
+        "mae_sample_sd_across_seeds": 0.133859958254652,
+        "mae_min_across_seeds": 1.0184372351478193,
+        "mae_max_across_seeds": 1.3688989740876398,
+        "mae_seed_20260801": 1.187757559139431,
+        "mae_seed_20260802": 1.0184372351478193,
+        "mae_seed_20260803": 1.3688989740876398,
+        "mae_seed_20260804": 1.0818083813919643,
+        "mae_seed_20260805": 1.2026664870438024
+      },
+      {
+        "trip_id": "62001037",
+        "n_windows": 19967,
+        "mae_mean_across_seeds": 0.6905099016165599,
+        "mae_sample_sd_across_seeds": 0.086013974955824,
+        "mae_min_across_seeds": 0.6026281441267607,
+        "mae_max_across_seeds": 0.8321118379454766,
+        "mae_seed_20260801": 0.6959146599075364,
+        "mae_seed_20260802": 0.6563532317222648,
+        "mae_seed_20260803": 0.8321118379454766,
+        "mae_seed_20260804": 0.6655416343807607,
+        "mae_seed_20260805": 0.6026281441267607
+      },
+      {
+        "trip_id": "62001035",
+        "n_windows": 8565,
+        "mae_mean_across_seeds": 1.1701505706537136,
+        "mae_sample_sd_across_seeds": 0.1303522746604635,
+        "mae_min_across_seeds": 1.0205401509043353,
+        "mae_max_across_seeds": 1.3645423413784408,
+        "mae_seed_20260801": 1.1894831833683532,
+        "mae_seed_20260802": 1.0205401509043353,
+        "mae_seed_20260803": 1.3645423413784408,
+        "mae_seed_20260804": 1.086294101701448,
+        "mae_seed_20260805": 1.1898930759159918
+      },
+      {
+        "trip_id": "62001042",
+        "n_windows": 41,
+        "mae_mean_across_seeds": 0.9575592209653158,
+        "mae_sample_sd_across_seeds": 0.24322354619021708,
+        "mae_min_across_seeds": 0.6787261323231023,
+        "mae_max_across_seeds": 1.3368895606296818,
+        "mae_seed_20260801": 0.879843252461131,
+        "mae_seed_20260802": 0.8802439614040095,
+        "mae_seed_20260803": 0.6787261323231023,
+        "mae_seed_20260804": 1.0120931980086536,
+        "mae_seed_20260805": 1.3368895606296818
+      }
+    ]
+  },
+  "ev_trip_metrics": [
+    {
+      "trip_id": "TripA07",
+      "n_feature_windows": 20923,
+      "n_proxy_aligned_windows": 20913,
+      "ev_direct_co2_mae_gps": 0.009465358809461765,
+      "ev_proxy_co2_mae_gps": 0.02701057109705907,
+      "proxy_minus_direct_gps": 0.017545212287597305,
+      "torque_mae_nm": 3.5400325182567838,
+      "throttle_mae_pct": 3.0458227604757226
+    },
+    {
+      "trip_id": "TripA10",
+      "n_feature_windows": 14166,
+      "n_proxy_aligned_windows": 14156,
+      "ev_direct_co2_mae_gps": 0.009739324527140299,
+      "ev_proxy_co2_mae_gps": 0.016650935005152072,
+      "proxy_minus_direct_gps": 0.006911610478011773,
+      "torque_mae_nm": 3.574916300287266,
+      "throttle_mae_pct": 2.6153599314659006
+    },
+    {
+      "trip_id": "TripA11",
+      "n_feature_windows": 14235,
+      "n_proxy_aligned_windows": 14225,
+      "ev_direct_co2_mae_gps": 0.018011554931703342,
+      "ev_proxy_co2_mae_gps": 0.024945844651252526,
+      "proxy_minus_direct_gps": 0.006934289719549184,
+      "torque_mae_nm": 5.297033596458081,
+      "throttle_mae_pct": 11.431075274906956
+    },
+    {
+      "trip_id": "TripA17",
+      "n_feature_windows": 6677,
+      "n_proxy_aligned_windows": 6667,
+      "ev_direct_co2_mae_gps": 0.016202244623949157,
+      "ev_proxy_co2_mae_gps": 0.0339175152407603,
+      "proxy_minus_direct_gps": 0.017715270616811146,
+      "torque_mae_nm": 3.7433923955685513,
+      "throttle_mae_pct": 3.085263185989576
+    },
+    {
+      "trip_id": "TripA21",
+      "n_feature_windows": 19819,
+      "n_proxy_aligned_windows": 19809,
+      "ev_direct_co2_mae_gps": 0.016159023175208544,
+      "ev_proxy_co2_mae_gps": 0.020530832279294794,
+      "proxy_minus_direct_gps": 0.004371809104086251,
+      "torque_mae_nm": 4.036323508224452,
+      "throttle_mae_pct": 2.807395300628668
+    },
+    {
+      "trip_id": "TripA24",
+      "n_feature_windows": 5312,
+      "n_proxy_aligned_windows": 5302,
+      "ev_direct_co2_mae_gps": 0.016568597719918456,
+      "ev_proxy_co2_mae_gps": 0.03620904495670192,
+      "proxy_minus_direct_gps": 0.019640447236783466,
+      "torque_mae_nm": 3.422475046636839,
+      "throttle_mae_pct": 3.37993674607608
+    },
+    {
+      "trip_id": "TripA25",
+      "n_feature_windows": 7617,
+      "n_proxy_aligned_windows": 7607,
+      "ev_direct_co2_mae_gps": 0.014550422083795738,
+      "ev_proxy_co2_mae_gps": 0.028541435739322336,
+      "proxy_minus_direct_gps": 0.013991013655526598,
+      "torque_mae_nm": 4.781518194008239,
+      "throttle_mae_pct": 2.9164580035074112
+    },
+    {
+      "trip_id": "TripA30",
+      "n_feature_windows": 13964,
+      "n_proxy_aligned_windows": 13954,
+      "ev_direct_co2_mae_gps": 0.017580420937254843,
+      "ev_proxy_co2_mae_gps": 0.020150134752002984,
+      "proxy_minus_direct_gps": 0.0025697138147481417,
+      "torque_mae_nm": 4.189428551917732,
+      "throttle_mae_pct": 2.9540255364597128
+    },
+    {
+      "trip_id": "TripB01",
+      "n_feature_windows": 32508,
+      "n_proxy_aligned_windows": 32498,
+      "ev_direct_co2_mae_gps": 0.018376173023014343,
+      "ev_proxy_co2_mae_gps": 0.027832420972012547,
+      "proxy_minus_direct_gps": 0.009456247948998204,
+      "torque_mae_nm": 4.074513034838592,
+      "throttle_mae_pct": 7.509402178953978
+    },
+    {
+      "trip_id": "TripB21",
+      "n_feature_windows": 10387,
+      "n_proxy_aligned_windows": 10377,
+      "ev_direct_co2_mae_gps": 0.021339181919242268,
+      "ev_proxy_co2_mae_gps": 0.029346163997779492,
+      "proxy_minus_direct_gps": 0.008006982078537225,
+      "torque_mae_nm": 3.827036064064823,
+      "throttle_mae_pct": 2.5980569463867855
+    },
+    {
+      "trip_id": "TripB24",
+      "n_feature_windows": 9770,
+      "n_proxy_aligned_windows": 9760,
+      "ev_direct_co2_mae_gps": 0.022655078695290966,
+      "ev_proxy_co2_mae_gps": 0.028603682685676767,
+      "proxy_minus_direct_gps": 0.005948603990385801,
+      "torque_mae_nm": 3.9934246909618984,
+      "throttle_mae_pct": 2.40055569722611
+    },
+    {
+      "trip_id": "TripB29",
+      "n_feature_windows": 9676,
+      "n_proxy_aligned_windows": 9666,
+      "ev_direct_co2_mae_gps": 0.021217705319567303,
+      "ev_proxy_co2_mae_gps": 0.033740529217989215,
+      "proxy_minus_direct_gps": 0.012522823898421912,
+      "torque_mae_nm": 3.7240283820838194,
+      "throttle_mae_pct": 3.0109813181919813
+    },
+    {
+      "trip_id": "TripB30",
+      "n_feature_windows": 9199,
+      "n_proxy_aligned_windows": 9189,
+      "ev_direct_co2_mae_gps": 0.02669227019243513,
+      "ev_proxy_co2_mae_gps": 0.030862118527763948,
+      "proxy_minus_direct_gps": 0.004169848335328817,
+      "torque_mae_nm": 4.712564838917013,
+      "throttle_mae_pct": 2.639918390489788
+    },
+    {
+      "trip_id": "TripB31",
+      "n_feature_windows": 10959,
+      "n_proxy_aligned_windows": 10949,
+      "ev_direct_co2_mae_gps": 0.01681611707514435,
+      "ev_proxy_co2_mae_gps": 0.02408726820346478,
+      "proxy_minus_direct_gps": 0.007271151128320431,
+      "torque_mae_nm": 3.788598315596624,
+      "throttle_mae_pct": 2.497632858337456
+    }
+  ],
+  "representative_ev_feature_trip": "TripB21",
+  "representative_ev_proxy_trip": "TripB21",
+  "bootstrap_summary": [
+    {
+      "metric": "ICEV CO2 MAE",
+      "metric_latex": "ICEV CO$_2$ MAE",
+      "unit": "g/s",
+      "n_trips": 13,
+      "mean": 0.427471832594742,
+      "median": 0.22109251405809688,
+      "sample_std": 0.41614391792351324,
+      "q1": 0.1291139672327262,
+      "q3": 0.6905099016165599,
+      "iqr_width": 0.5613959343838337,
+      "ci_low": 0.22988807810416229,
+      "ci_high": 0.6589870383735432
+    },
+    {
+      "metric": "EV direct CO2 MAE",
+      "metric_latex": "EV direct CO$_2$ MAE",
+      "unit": "g/s",
+      "n_trips": 14,
+      "mean": 0.01752667664522332,
+      "median": 0.0171982690061996,
+      "sample_std": 0.004632330673512553,
+      "q1": 0.016169828537393696,
+      "q3": 0.020507322245429064,
+      "iqr_width": 0.004337493708035368,
+      "ci_low": 0.015131602961059172,
+      "ci_high": 0.019904302120189888
+    },
+    {
+      "metric": "EV proxy CO2 MAE",
+      "metric_latex": "EV proxy CO$_2$ MAE",
+      "unit": "g/s",
+      "n_trips": 14,
+      "mean": 0.027316321237588054,
+      "median": 0.02818692835566744,
+      "sample_std": 0.005625021218053326,
+      "q1": 0.02430191231541172,
+      "q3": 0.030483129895267833,
+      "iqr_width": 0.006181217579856114,
+      "ci_low": 0.02443356250771348,
+      "ci_high": 0.03006299672825216
+    },
+    {
+      "metric": "Proxy - direct",
+      "metric_latex": "Proxy $-$ direct",
+      "unit": "g/s",
+      "n_trips": 14,
+      "mean": 0.009789644592364736,
+      "median": 0.007639066603428828,
+      "sample_std": 0.005540122789584573,
+      "q1": 0.006189355612292294,
+      "q3": 0.013623966216250427,
+      "iqr_width": 0.007434610603958133,
+      "ci_low": 0.007110288451659199,
+      "ci_high": 0.012678671901963973
+    },
+    {
+      "metric": "Torque MAE",
+      "metric_latex": "Torque MAE",
+      "unit": "Nm",
+      "n_trips": 14,
+      "mean": 4.050377531272908,
+      "median": 3.9102303775133604,
+      "sample_std": 0.537121906273014,
+      "q1": 3.7288693854550026,
+      "q3": 4.160699672647947,
+      "iqr_width": 0.4318302871929447,
+      "ci_low": 3.80054312473034,
+      "ci_high": 4.339193902467713
+    },
+    {
+      "metric": "Throttle MAE",
+      "metric_latex": "Throttle MAE",
+      "unit": "%",
+      "n_trips": 14,
+      "mean": 3.7779917235068656,
+      "median": 2.935241769983562,
+      "sample_std": 2.544902073429936,
+      "q1": 2.621499546221872,
+      "q3": 3.075403079611113,
+      "iqr_width": 0.4539035333892407,
+      "ci_low": 2.7720228541778833,
+      "ci_high": 5.282606601932865
+    }
+  ],
+  "checkpoint_sha256": {
+    "ev_emissions": "055d8f143a6ed090d9905e77fb4ddc5bd5509ffab87edf861a84b6d91320716a",
+    "ev_feature": "0a110c7be32c35895e559ea1fcc07cbaea739fc3cf334695b119619a2ed96272"
+  },
+  "generated_files": {
+    "figure_training_pacifica.png": {
+      "sha256": "bdc6fe0074678a2a8633628858ae8ce772907d8480d26a8a19b3b4242704f73e",
+      "bytes": 132472
+    },
+    "figure_training_pacifica.pdf": {
+      "sha256": "77ebc76ef39201462dad5fc50e69937cf3037fd6a4141dfb27e4baa6ebe43e43",
+      "bytes": 13465
+    },
+    "figure_training_pacifica.tiff": {
+      "sha256": "834f41ff7ba8128a3603159e8066701eb291167d71a708c02f02faeeb65d5291",
+      "bytes": 250952
+    },
+    "figure_best_worst_pacifica.png": {
+      "sha256": "f8f25439290276f8ec1976f6cb82d2e00cc5587e260b9558dfc91ed5cd7cde5a",
+      "bytes": 443113
+    },
+    "figure_best_worst_pacifica.pdf": {
+      "sha256": "67a3cc5f0f693a9717cbadb8eca481cc552aade9acbdb2c9c522af1dd0cfb3d0",
+      "bytes": 275292
+    },
+    "figure_best_worst_pacifica.tiff": {
+      "sha256": "0f0d4909fcab33d666ead5cd9baa0d7542f86e27a20e62b2099f99afb23a2a20",
+      "bytes": 755936
+    },
+    "figure_training_blazer.png": {
+      "sha256": "03502d357377e6f6a63565556f05f9a9a094867fe5e79da0ba0fbffb39c496a7",
+      "bytes": 120832
+    },
+    "figure_training_blazer.pdf": {
+      "sha256": "665fa91becf36d15b317a33d65ee0aeef7f07aef3d2e2112f88b26230ccae92d",
+      "bytes": 13509
+    },
+    "figure_training_blazer.tiff": {
+      "sha256": "344dcd2eae42c194265afe6676f8e69fae5135a4250f88161c152d2ff0b130d4",
+      "bytes": 236604
+    },
+    "figure_best_worst_blazer.png": {
+      "sha256": "8046ffa18d9c6b91f2ba57a75bbb81ed65c1ce0f19f047f6449a254c816ac6ac",
+      "bytes": 421445
+    },
+    "figure_best_worst_blazer.pdf": {
+      "sha256": "4e012faed19d90892e42c47c1fac701317a9722560d8d4b98321bdb1d68f7438",
+      "bytes": 325772
+    },
+    "figure_best_worst_blazer.tiff": {
+      "sha256": "f73c718ca9949862150fe51fdc5da0880cc0fac667d31123be846aa7c50100a5",
+      "bytes": 777236
+    },
+    "figure_training_qx50.png": {
+      "sha256": "4de3cd4a4be8802e04ffbafe73f7ca14b272d6e1985e688a77ec13df68e2ace5",
+      "bytes": 124805
+    },
+    "figure_training_qx50.pdf": {
+      "sha256": "28ce90dedb1552677f585052c2409216e3a8acd8e60fc5777ea141b93607032f",
+      "bytes": 13402
+    },
+    "figure_training_qx50.tiff": {
+      "sha256": "d141c0fd345aaad12dfd2c82b78121509e94fbfce9846f2f6b943302d6966650",
+      "bytes": 237364
+    },
+    "figure_best_worst_qx50.png": {
+      "sha256": "1b5382f9db340fd188b356864c91f70a669600344299f1050db1d3765245aa72",
+      "bytes": 355377
+    },
+    "figure_best_worst_qx50.pdf": {
+      "sha256": "8bc0aca36d69b7a7d78fcacd51467a53c271ee881120308faa8d9ac32dc182c5",
+      "bytes": 293730
+    },
+    "figure_best_worst_qx50.tiff": {
+      "sha256": "75f656c4f487dfe98b3956362e666d67a63576e74595902514a4e0973072ba91",
+      "bytes": 605644
+    },
+    "figure_training_ev_emissions_features.png": {
+      "sha256": "82c71d1f316b5dafbaf400fca2c4b37d11eac12beeafd4b58b00e5d7c55c5a60",
+      "bytes": 190596
+    },
+    "figure_training_ev_emissions_features.pdf": {
+      "sha256": "fc8a00a4927692d92bfe7c47dd7feff4860eaa80a17de7b0cb302096b8b94118",
+      "bytes": 15158
+    },
+    "figure_training_ev_emissions_features.tiff": {
+      "sha256": "400b1fa1806aed3cf71fd4072944593998b3f4400d8e7b85a9b68f0e1aa47dbd",
+      "bytes": 410066
+    },
+    "figure_ev_torque_throttle_measured_predicted.png": {
+      "sha256": "b30794dd039c2182b8124f0d0e200b0ed15613d0d13c479c66f8d6e2563b1cc4",
+      "bytes": 486579
+    },
+    "figure_ev_torque_throttle_measured_predicted.pdf": {
+      "sha256": "6709a906d58f0b1f84605a08552dacfd630d5436fd9681a6cc40804009c2c56d",
+      "bytes": 107475
+    },
+    "figure_ev_torque_throttle_measured_predicted.tiff": {
+      "sha256": "5f2e8987ab89af68b3761e033c6b28eae99446167d7acd9916ba315daeac6caf",
+      "bytes": 865914
+    },
+    "figure_ev_direct_proxy_observed.png": {
+      "sha256": "18a5a23e870ca5e1f2f1ceb97e71d7fc367a6038ab50ccf22ca67f20ce6a403e",
+      "bytes": 535062
+    },
+    "figure_ev_direct_proxy_observed.pdf": {
+      "sha256": "9dc1ab66fcd1a6cce9f8b9e335dcc2d01bb42bb5bc8d7a9685df871d428211db",
+      "bytes": 98846
+    },
+    "figure_ev_direct_proxy_observed.tiff": {
+      "sha256": "ec40f99300d122cc92bbb7d5154b892c310929e0dcbde5e2ccce60773144cc4c",
+      "bytes": 715902
+    },
+    "table_qx50_trip_metrics.csv": {
+      "sha256": "76ab693f805fe24d9dba4d8b16d63be65672be88d863f6d2cdead06aa3ae02bc",
+      "bytes": 1563
+    },
+    "table_blazer_trip_metrics.csv": {
+      "sha256": "4f56958ab085ead00a0eb22fbfcfbef633b3b3d3bb6cc0c626803bb37d0b4951",
+      "bytes": 595
+    },
+    "table_pacifica_trip_metrics.csv": {
+      "sha256": "4957593ae149d5fc422145154b8918eb0a33611409d755a333069bf8fcbc392e",
+      "bytes": 939
+    },
+    "table_ev_trip_metrics_complete.csv": {
+      "sha256": "128b532c72e7dcfdc1a307c526bf5c889ef66393cfb167342075e8b1696d4be6",
+      "bytes": 1819
+    },
+    "table_bootstrap_complete.csv": {
+      "sha256": "24e55a0151db0bfb20a9c98fa5a6addae1e5e62ec7ffba3c8af02a6d682e7c9b",
+      "bytes": 1262
+    },
+    "restored_tables_corrected.tex": {
+      "sha256": "6fd2a44176d069e6ddccb89fc4b92c971fac9bb62bb242fa84559cc66f03be61",
+      "bytes": 3248
+    }
+  },
+  "guardrails": [
+    "The proxy validation is an in-domain EV component-composition check, not a cross-powertrain counterfactual validation.",
+    "Five training seeds quantify optimization variability on a fixed trip split; they are not independent test datasets.",
+    "The comparison is conditional on observed covariates and does not establish causal equivalence of operating conditions."
+  ]
+}

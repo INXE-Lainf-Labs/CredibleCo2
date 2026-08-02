@@ -1,0 +1,75 @@
+% Auto-generated corrected-protocol tables.
+\begin{table}[t]
+\caption{Infiniti QX50 -- held-out-trip CO$_2$ MAE across five LSTM training seeds.}
+\label{tab:qx50_trip_mae_corrected}
+\centering\begin{tabular}{lcc}
+\hline Trip & Mean MAE (g/s) & SD \\
+\hline
+61907049 & 0.2798 & 0.0218 \
+61907050 & 0.1215 & 0.0034 \
+61907052 & 0.1280 & 0.0053 \
+61907058 & 0.1291 & 0.0042 \
+61907068 & 0.1078 & 0.0108 \
+61907072 & 0.3047 & 0.0120 \
+61907073 & 0.2211 & 0.0108 \
+\hline\end{tabular}
+\end{table}
+\begin{table}[t]
+\caption{Chevrolet Blazer -- held-out-trip CO$_2$ MAE across five LSTM training seeds.}
+\label{tab:blazer_trip_mae_corrected}
+\centering\begin{tabular}{lcc}
+\hline Trip & Mean MAE (g/s) & SD \\
+\hline
+61908016.0 & 0.1379 & 0.0040 \
+61908018.0 & 0.1371 & 0.0028 \
+\hline\end{tabular}
+\end{table}
+\begin{table}[t]
+\caption{Chrysler Pacifica -- held-out-trip CO$_2$ MAE across five LSTM training seeds.}
+\label{tab:pacifica_trip_mae_corrected}
+\centering\begin{tabular}{lcc}
+\hline Trip & Mean MAE (g/s) & SD \\
+\hline
+62001034 & 1.1719 & 0.1339 \
+62001035 & 1.1702 & 0.1304 \
+62001037 & 0.6905 & 0.0860 \
+62001042 & 0.9576 & 0.2432 \
+\hline\end{tabular}
+\end{table}
+\begin{table*}[t]
+\caption{BMW i3 held-out-trip metrics under the corrected complete-trip protocol. Direct and proxy emissions use the common two-stage aligned subset; torque and throttle use all eligible feature-model windows.}
+\label{tab:ev_trip_metrics_corrected}
+\centering\scriptsize\begin{tabular}{lrrrrr}
+\hline Trip & Direct CO$_2$ & Proxy CO$_2$ & Proxy$-$direct & Torque & Throttle \\
+ & MAE (g/s) & MAE (g/s) & (g/s) & MAE (Nm) & MAE (\%) \\
+\hline
+TripA07 & 0.0095 & 0.0270 & 0.0175 & 3.540 & 3.046 \
+TripA10 & 0.0097 & 0.0167 & 0.0069 & 3.575 & 2.615 \
+TripA11 & 0.0180 & 0.0249 & 0.0069 & 5.297 & 11.431 \
+TripA17 & 0.0162 & 0.0339 & 0.0177 & 3.743 & 3.085 \
+TripA21 & 0.0162 & 0.0205 & 0.0044 & 4.036 & 2.807 \
+TripA24 & 0.0166 & 0.0362 & 0.0196 & 3.422 & 3.380 \
+TripA25 & 0.0146 & 0.0285 & 0.0140 & 4.782 & 2.916 \
+TripA30 & 0.0176 & 0.0202 & 0.0026 & 4.189 & 2.954 \
+TripB01 & 0.0184 & 0.0278 & 0.0095 & 4.075 & 7.509 \
+TripB21 & 0.0213 & 0.0293 & 0.0080 & 3.827 & 2.598 \
+TripB24 & 0.0227 & 0.0286 & 0.0059 & 3.993 & 2.401 \
+TripB29 & 0.0212 & 0.0337 & 0.0125 & 3.724 & 3.011 \
+TripB30 & 0.0267 & 0.0309 & 0.0042 & 4.713 & 2.640 \
+TripB31 & 0.0168 & 0.0241 & 0.0073 & 3.789 & 2.498 \
+\hline\end{tabular}
+\end{table*}
+\begin{table*}[t]
+\caption{Complete trip-level nonparametric bootstrap summary. Intervals are 95\% percentile intervals for the mean from 10,000 trip resamples.}
+\label{tab:bootstrap_complete_corrected}
+\centering\small\begin{tabular}{lrrrrr}
+\hline Metric & $n$ & Mean & 95\% bootstrap CI & Median & IQR ($Q_1$--$Q_3$) \\
+\hline
+ICEV CO$_2$ MAE & 13 & 0.4275 & [0.2299, 0.6590] & 0.2211 & [0.1291, 0.6905] \
+EV direct CO$_2$ MAE & 14 & 0.0175 & [0.0151, 0.0199] & 0.0172 & [0.0162, 0.0205] \
+EV proxy CO$_2$ MAE & 14 & 0.0273 & [0.0244, 0.0301] & 0.0282 & [0.0243, 0.0305] \
+Proxy $-$ direct & 14 & 0.0098 & [0.0071, 0.0127] & 0.0076 & [0.0062, 0.0136] \
+Torque MAE & 14 & 4.0504 & [3.8005, 4.3392] & 3.9102 & [3.7289, 4.1607] \
+Throttle MAE & 14 & 3.7780 & [2.7720, 5.2826] & 2.9352 & [2.6215, 3.0754] \
+\hline\end{tabular}
+\end{table*}
