@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""CPU feasibility rerun of the LSTM under the corrected trip-wise protocol.
+"""Run the LSTM under the corrected leakage-free trip-wise protocol.
 
-The default configuration intentionally uses a deterministic subset and five
-training epochs. It is a feasibility run, not a silent replacement for the
-historical 20-epoch results. Once runtime is known, the same script can be run
-with larger limits or all windows.
+The runner supports both full-data and explicitly window-limited executions.
+Model selection is based only on validation MSE: the lowest-validation-loss
+checkpoint is restored before the primary test metrics are computed and is
+saved alongside the JSON and Markdown artifacts.
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ import math
 import os
 import time
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import torch
@@ -46,7 +47,7 @@ from src.revision_protocol import (
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", choices=sorted(DATASETS), default="qx50")
-    parser.add_argument("--epochs", type=int, default=5)
+    parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batch-size", type=int, default=512)
     parser.add_argument("--hidden-dim", type=int, default=32)
     parser.add_argument("--num-blocks", type=int, default=4)
@@ -54,9 +55,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-lr", type=float, default=1e-3)
     parser.add_argument("--final-lr", type=float, default=2.5e-5)
     parser.add_argument("--warmup-epochs", type=int, default=1)
-    parser.add_argument("--max-train-windows", type=int, default=100000)
-    parser.add_argument("--max-validation-windows", type=int, default=50000)
-    parser.add_argument("--max-test-windows", type=int, default=100000)
+    parser.add_argument("--max-train-windows", type=int, default=999_999_999)
+    parser.add_argument("--max-validation-windows", type=int, default=999_999_999)
+    parser.add_argument("--max-test-windows", type=int, default=999_999_999)
     parser.add_argument("--feature-model", action="store_true")
     parser.add_argument("--threads", type=int, default=max(1, min(4, os.cpu_count() or 1)))
     parser.add_argument("--output-dir", default="artifacts/revision_lstm_cpu")
@@ -131,7 +132,33 @@ def evaluate(
     )
 
 
-def run(args: argparse.Namespace) -> dict:
+def clone_state_dict(model: nn.Module) -> dict[str, torch.Tensor]:
+    """Create an immutable CPU copy suitable for later restoration and saving."""
+    return {
+        name: value.detach().cpu().clone()
+        for name, value in model.state_dict().items()
+    }
+
+
+def metrics_payload(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    mse: float,
+    trips: np.ndarray,
+) -> dict[str, Any]:
+    per_trip = per_trip_mae(y_true, y_pred, trips)
+    return {
+        "mse": mse,
+        **regression_metrics(y_true, y_pred),
+        "per_trip_mae": per_trip,
+        "trip_level_mae_summary": summarize_trip_metric(per_trip.values(), SEED),
+    }
+
+
+def run(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str, torch.Tensor]]:
+    if args.epochs < 1:
+        raise ValueError("--epochs must be at least 1")
+
     set_global_seed(SEED)
     torch.set_num_threads(args.threads)
     torch.set_num_interop_threads(1)
@@ -183,6 +210,14 @@ def run(args: argparse.Namespace) -> dict:
         x_test, y_test, test_trips, args.max_test_windows, SEED + 2
     )
 
+    used_counts = {
+        "train": len(x_train),
+        "validation": len(x_validation),
+        "test": len(x_test),
+    }
+    is_full_data = used_counts == full_counts
+    run_scope = "full_data" if is_full_data else "window_limited"
+
     train_loader = make_loader(x_train, y_train, args.batch_size, True, SEED)
     validation_loader = make_loader(
         x_validation, y_validation, args.batch_size, False, SEED
@@ -206,7 +241,11 @@ def run(args: argparse.Namespace) -> dict:
         args.final_lr,
     )
 
-    history: list[dict[str, float]] = []
+    history: list[dict[str, float | int]] = []
+    best_epoch = 0
+    best_validation_mse = math.inf
+    best_state_dict: dict[str, torch.Tensor] | None = None
+
     start = time.perf_counter()
     for epoch in range(args.epochs):
         epoch_start = time.perf_counter()
@@ -223,7 +262,12 @@ def run(args: argparse.Namespace) -> dict:
             seen += len(xb)
 
         _, _, validation_mse = evaluate(model, validation_loader)
-        record = {
+        if validation_mse < best_validation_mse:
+            best_validation_mse = validation_mse
+            best_epoch = epoch + 1
+            best_state_dict = clone_state_dict(model)
+
+        record: dict[str, float | int] = {
             "epoch": epoch + 1,
             "train_mse": total / max(seen, 1),
             "validation_mse": validation_mse,
@@ -235,12 +279,44 @@ def run(args: argparse.Namespace) -> dict:
         scheduler.step()
 
     training_seconds = time.perf_counter() - start
+    if best_state_dict is None:
+        raise RuntimeError("No validation checkpoint was produced")
+
+    # Preserve the last-epoch test result for auditability, but do not use the
+    # test set for model selection.
+    y_true_last, y_pred_last, last_test_mse = evaluate(model, test_loader)
+    last_epoch_test = metrics_payload(
+        y_true_last, y_pred_last, last_test_mse, test_trips
+    )
+
+    # Primary reported metrics use the checkpoint selected solely by validation.
+    model.load_state_dict(best_state_dict)
     y_true, y_pred, test_mse = evaluate(model, test_loader)
-    per_trip = per_trip_mae(y_true, y_pred, test_trips)
+    selected_test = metrics_payload(y_true, y_pred, test_mse, test_trips)
 
     parameter_count = sum(parameter.numel() for parameter in model.parameters())
-    result = {
-        "status": "completed_cpu_feasibility_run",
+    final_validation_mse = float(history[-1]["validation_mse"])
+    status = (
+        "completed_full_data_run"
+        if is_full_data
+        else "completed_window_limited_run"
+    )
+    interpretation_guardrail = (
+        "This run used all available windows under the corrected complete-trip "
+        "protocol. The primary test metrics use the checkpoint with the lowest "
+        "validation MSE. Comparisons remain conditional on observed covariates "
+        "and do not establish causal equivalence of operating conditions."
+        if is_full_data
+        else
+        "This run uses a deterministic window subset. It validates the corrected "
+        "implementation, but it must not be reported as a full-data result without "
+        "an explicit sensitivity comparison. Model selection still uses only the "
+        "validation set."
+    )
+
+    result: dict[str, Any] = {
+        "status": status,
+        "run_scope": run_scope,
         "dataset": args.dataset,
         "display_name": spec.display_name,
         "task": task,
@@ -256,11 +332,7 @@ def run(args: argparse.Namespace) -> dict:
             "test": window_count_by_trip(frame, split.test_trip_ids),
         },
         "full_window_counts": full_counts,
-        "used_window_counts": {
-            "train": len(x_train),
-            "validation": len(x_validation),
-            "test": len(x_test),
-        },
+        "used_window_counts": used_counts,
         "model": {
             "architecture": "MultipleLayerLSTM",
             "hidden_dim": args.hidden_dim,
@@ -274,30 +346,35 @@ def run(args: argparse.Namespace) -> dict:
             "final_lr": args.final_lr,
             "warmup_epochs": args.warmup_epochs,
         },
-        "history": history,
-        "test": {
-            "mse": test_mse,
-            **regression_metrics(y_true, y_pred),
-            "per_trip_mae": per_trip,
-            "trip_level_mae_summary": summarize_trip_metric(per_trip.values(), SEED),
+        "checkpoint_selection": {
+            "policy": "minimum_validation_mse",
+            "best_epoch": best_epoch,
+            "best_validation_mse": best_validation_mse,
+            "final_epoch": args.epochs,
+            "final_validation_mse": final_validation_mse,
+            "restored_before_primary_test_evaluation": True,
+            "test_set_used_for_selection": False,
         },
+        "history": history,
+        "test": selected_test,
+        "last_epoch_test": last_epoch_test,
         "runtime_seconds": training_seconds,
-        "interpretation_guardrail": (
-            "This CPU run uses a deterministic subset when a maximum-window limit is set. "
-            "It validates the corrected implementation and estimates runtime; it must not be "
-            "reported as a full-data replacement without an explicit sensitivity comparison."
-        ),
+        "interpretation_guardrail": interpretation_guardrail,
     }
-    return result
+    return result, best_state_dict
 
 
-def markdown(result: dict) -> str:
+def markdown(result: dict[str, Any]) -> str:
     test = result["test"]
+    last_test = result["last_epoch_test"]
     counts = result["used_window_counts"]
     model = result["model"]
+    selection = result["checkpoint_selection"]
+    run_label = "Full-data" if result["run_scope"] == "full_data" else "Window-limited"
     lines = [
-        f"# CPU LSTM corrected-protocol rerun: {result['display_name']}",
+        f"# {run_label} CPU LSTM corrected-protocol rerun: {result['display_name']}",
         "",
+        f"- Status: `{result['status']}`",
         f"- Task: `{result['task']}`",
         f"- Features: {', '.join(result['feature_columns'])}",
         f"- Targets: {', '.join(result['target_columns'])}",
@@ -306,13 +383,27 @@ def markdown(result: dict) -> str:
         f"- Architecture: {model['num_blocks']} residual LSTM blocks, hidden dimension {model['hidden_dim']}, {model['parameter_count']:,} parameters",
         f"- Training: {model['epochs']} epochs, batch size {model['batch_size']}, CPU runtime {result['runtime_seconds']:.1f} s",
         "",
-        "## Test metrics",
+        "## Checkpoint selection",
+        "",
+        "- Policy: minimum validation MSE; the test set was not used for selection.",
+        f"- Selected epoch: {selection['best_epoch']} of {selection['final_epoch']}",
+        f"- Best validation MSE: {selection['best_validation_mse']:.8g}",
+        f"- Final-epoch validation MSE: {selection['final_validation_mse']:.8g}",
+        "",
+        "## Primary test metrics: selected validation checkpoint",
         "",
         f"- MSE: {test['mse']:.8g}",
         f"- MAE: {test['mae']:.8g}",
         f"- RMSE: {test['rmse']:.8g}",
         f"- R2: {test['r2']:.8g}",
         f"- Trip-level MAE summary: `{json.dumps(test['trip_level_mae_summary'])}`",
+        "",
+        "## Audit metrics: last training epoch",
+        "",
+        f"- MSE: {last_test['mse']:.8g}",
+        f"- MAE: {last_test['mae']:.8g}",
+        f"- RMSE: {last_test['rmse']:.8g}",
+        f"- R2: {last_test['r2']:.8g}",
         "",
         "## Guardrail",
         "",
@@ -324,11 +415,26 @@ def markdown(result: dict) -> str:
 
 def main() -> None:
     args = parse_args()
-    result = run(args)
+    result, best_state_dict = run(args)
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     suffix = "feature" if args.feature_model else "emissions"
     stem = f"{args.dataset}_{suffix}"
+    checkpoint_name = f"{stem}_best.pt"
+    result["checkpoint_artifact"] = checkpoint_name
+
+    checkpoint_payload = {
+        "model_state_dict": best_state_dict,
+        "dataset": result["dataset"],
+        "display_name": result["display_name"],
+        "task": result["task"],
+        "seed": result["seed"],
+        "feature_columns": result["feature_columns"],
+        "target_columns": result["target_columns"],
+        "model": result["model"],
+        "checkpoint_selection": result["checkpoint_selection"],
+    }
+    torch.save(checkpoint_payload, out_dir / checkpoint_name)
     save_json(out_dir / f"{stem}.json", result)
     (out_dir / f"{stem}.md").write_text(markdown(result), encoding="utf-8")
     print(markdown(result))
