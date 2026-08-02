@@ -1,4 +1,4 @@
-name: Revision LSTM Five Seeds Status
+name: Revision Strong Baselines Status
 
 on:
   pull_request:
@@ -16,12 +16,12 @@ jobs:
   inspect:
     runs-on: ubuntu-latest
     env:
-      TARGET_HEAD_SHA: 630f81ce7e4fce084c3805d7fb154032df6cf8d5
+      TARGET_HEAD_SHA: db084e064ef08800132f9f2d7061ea9b2b7abbb9
       TARGET_BRANCH: revision-r2-reviewer3-4
-      TARGET_WORKFLOW: revision-lstm-five-seeds.yml
+      TARGET_WORKFLOW: revision-strong-tabular-baselines.yml
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Inspect five-seed workflow
+      - name: Inspect strong baseline workflow
         shell: bash
         run: |
           set -euo pipefail
@@ -51,7 +51,7 @@ jobs:
               'target_head_sha': os.environ['TARGET_HEAD_SHA'],
               'target_branch': os.environ['TARGET_BRANCH'],
               'target_workflow': os.environ['TARGET_WORKFLOW'],
-          }, open('artifacts/five-seeds-status.json', 'w', encoding='utf-8'), indent=2)
+          }, open('artifacts/strong-baselines-status.json', 'w', encoding='utf-8'), indent=2)
           PY
             exit 0
           fi
@@ -61,7 +61,7 @@ jobs:
           gh api --method GET "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts" -f per_page=100 > /tmp/artifacts.json
 
           python - <<'PY'
-          import collections, json, os
+          import collections, json
           run = json.load(open('/tmp/run.json', encoding='utf-8'))
           jobs = json.load(open('/tmp/jobs.json', encoding='utf-8'))['jobs']
           artifacts = json.load(open('/tmp/artifacts.json', encoding='utf-8'))['artifacts']
@@ -96,7 +96,7 @@ jobs:
                   'size_in_bytes': a['size_in_bytes'],
               } for a in artifacts],
           }
-          with open('artifacts/five-seeds-status.json', 'w', encoding='utf-8') as handle:
+          with open('artifacts/strong-baselines-status.json', 'w', encoding='utf-8') as handle:
               json.dump(payload, handle, indent=2)
           print(json.dumps(payload, indent=2))
           PY
@@ -104,7 +104,7 @@ jobs:
       - name: Upload status artifact
         uses: actions/upload-artifact@v4
         with:
-          name: revision-lstm-five-seeds-status
-          path: artifacts/five-seeds-status.json
+          name: revision-strong-baselines-status
+          path: artifacts/strong-baselines-status.json
           if-no-files-found: error
           retention-days: 7
