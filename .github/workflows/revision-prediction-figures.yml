@@ -89,17 +89,32 @@ jobs:
           }, indent=2))
           PY
 
-      - name: Commit manuscript-ready figures
+      - name: Commit manuscript-ready figures without losing concurrent updates
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add artifacts/revision_prediction_figures
-          if git diff --cached --quiet; then
-            echo "No figure changes to commit"
-          else
+          snapshot="$(mktemp -d)"
+          cp -a artifacts/revision_prediction_figures "$snapshot/"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "$TARGET_BRANCH"
+            git reset --hard "origin/$TARGET_BRANCH"
+            rm -rf artifacts/revision_prediction_figures
+            mkdir -p artifacts
+            cp -a "$snapshot/revision_prediction_figures" artifacts/
+            git add artifacts/revision_prediction_figures
+            if git diff --cached --quiet; then
+              echo "No figure changes to commit"
+              exit 0
+            fi
             git commit -m "Regenerate corrected prediction figures"
-            git push origin "HEAD:${TARGET_BRANCH}"
-          fi
+            if git push origin "HEAD:${TARGET_BRANCH}"; then
+              exit 0
+            fi
+            echo "Concurrent branch update detected; retrying from latest remote head (${attempt}/5)"
+            sleep $((attempt * 5))
+          done
+          echo "Unable to publish regenerated figures after five attempts" >&2
+          exit 1
 
       - name: Upload full prediction artifact
         uses: actions/upload-artifact@v4
