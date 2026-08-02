@@ -1,0 +1,106 @@
+name: Revision Prediction Figures
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - scripts/regenerate_revision_prediction_figures.py
+      - .github/workflows/revision-prediction-figures.yml
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_RUN_ID: '30742131505'
+      TARGET_BRANCH: revision-r2-reviewer3-4
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - name: Check out revision branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy pandas scikit-learn matplotlib
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Download audited five-seed artifacts
+        run: |
+          rm -rf downloaded-five-seeds
+          mkdir -p downloaded-five-seeds
+          gh run download "$SOURCE_RUN_ID" --dir downloaded-five-seeds
+          test "$(find downloaded-five-seeds -name '*_emissions_seed*.json' | wc -l)" -eq 20
+          test "$(find downloaded-five-seeds -name '*_emissions_seed*_best.pt' | wc -l)" -eq 20
+
+      - name: Regenerate predictions and figures
+        run: |
+          rm -rf artifacts/revision_prediction_figures full-prediction-arrays
+          python scripts/regenerate_revision_prediction_figures.py \
+            --checkpoints-dir downloaded-five-seeds \
+            --output-dir artifacts/revision_prediction_figures \
+            --full-predictions-dir full-prediction-arrays \
+            --batch-size 2048 \
+            --threads 4
+
+      - name: Verify generated assets
+        run: |
+          test -f artifacts/revision_prediction_figures/figure_lstm_predictions_median_test_trips.png
+          test -f artifacts/revision_prediction_figures/figure_lstm_predictions_median_test_trips.pdf
+          test -f artifacts/revision_prediction_figures/figure_lstm_parity_full_test_sets.png
+          test -f artifacts/revision_prediction_figures/figure_lstm_parity_full_test_sets.pdf
+          test -f artifacts/revision_prediction_figures/figure_lstm_training_validation_five_seeds.png
+          test -f artifacts/revision_prediction_figures/figure_lstm_training_validation_five_seeds.pdf
+          test "$(find artifacts/revision_prediction_figures -name '*_median_length_test_trip_predictions.csv' | wc -l)" -eq 4
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('artifacts/revision_prediction_figures/prediction_figure_manifest.json')
+          payload = json.loads(p.read_text(encoding='utf-8'))
+          assert payload['status'] == 'completed_regenerated_prediction_figures'
+          assert payload['split_seed'] == 20260801
+          assert payload['training_seeds'] == [20260801, 20260802, 20260803, 20260804, 20260805]
+          assert all(payload['protocol_checks'].values())
+          assert len(payload['datasets']) == 4
+          print(json.dumps({
+              'datasets': [d['dataset'] for d in payload['datasets']],
+              'generated_files': sorted(payload['generated_files']),
+          }, indent=2))
+          PY
+
+      - name: Commit manuscript-ready figures
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add artifacts/revision_prediction_figures
+          if git diff --cached --quiet; then
+            echo "No figure changes to commit"
+          else
+            git commit -m "Regenerate corrected prediction figures"
+            git push origin "HEAD:${TARGET_BRANCH}"
+          fi
+
+      - name: Upload full prediction artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: revision-corrected-prediction-figures
+          path: |
+            artifacts/revision_prediction_figures
+            full-prediction-arrays
+          if-no-files-found: error
+          retention-days: 90
