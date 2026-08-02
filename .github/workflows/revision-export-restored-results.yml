@@ -1,0 +1,33 @@
+name: Export Restored Revision Results
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/revision-export-restored-results.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out revision branch
+        uses: actions/checkout@v4
+        with:
+          ref: revision-r2-reviewer3-4
+      - name: Verify restored assets
+        run: |
+          test -f artifacts/revision_restored_results/figure_ev_torque_throttle_measured_predicted.png
+          test -f artifacts/revision_restored_results/figure_ev_direct_proxy_observed.png
+          test "$(find artifacts/revision_restored_results -maxdepth 1 -name 'figure_*.png' | wc -l)" -eq 9
+      - name: Upload restored assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: revision-restored-results-export
+          path: artifacts/revision_restored_results
+          if-no-files-found: error
+          retention-days: 30
