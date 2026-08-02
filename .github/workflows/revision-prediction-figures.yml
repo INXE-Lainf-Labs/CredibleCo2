@@ -66,6 +66,8 @@ jobs:
           test -f artifacts/revision_prediction_figures/figure_lstm_parity_full_test_sets.pdf
           test -f artifacts/revision_prediction_figures/figure_lstm_training_validation_five_seeds.png
           test -f artifacts/revision_prediction_figures/figure_lstm_training_validation_five_seeds.pdf
+          test -f artifacts/revision_restored_results/figure_ev_torque_throttle_measured_predicted.png
+          test -f artifacts/revision_restored_results/figure_ev_direct_proxy_observed.png
           test "$(find artifacts/revision_prediction_figures -name '*_median_length_test_trip_predictions.csv' | wc -l)" -eq 4
           python - <<'PY'
           import json
@@ -116,12 +118,18 @@ jobs:
           echo "Unable to publish regenerated figures after five attempts" >&2
           exit 1
 
-      - name: Upload full prediction artifact
+      - name: Upload complete manuscript-figure artifact
         uses: actions/upload-artifact@v4
         with:
           name: revision-corrected-prediction-figures
           path: |
             artifacts/revision_prediction_figures
+            artifacts/revision_restored_results/figure_ev_torque_throttle_measured_predicted.png
+            artifacts/revision_restored_results/figure_ev_torque_throttle_measured_predicted.pdf
+            artifacts/revision_restored_results/figure_ev_torque_throttle_measured_predicted.tiff
+            artifacts/revision_restored_results/figure_ev_direct_proxy_observed.png
+            artifacts/revision_restored_results/figure_ev_direct_proxy_observed.pdf
+            artifacts/revision_restored_results/figure_ev_direct_proxy_observed.tiff
             full-prediction-arrays
           if-no-files-found: error
           retention-days: 90
