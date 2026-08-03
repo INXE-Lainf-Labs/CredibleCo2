@@ -1,0 +1,90 @@
+{
+  "status": "completed_ev_test_trip_sensitivity",
+  "split_seed": 20260801,
+  "test_trip_ids": [
+    "TripA24",
+    "TripB21",
+    "TripB24",
+    "TripA07",
+    "TripA10",
+    "TripB01",
+    "TripA25",
+    "TripB30",
+    "TripA21",
+    "TripA11",
+    "TripB31",
+    "TripB29",
+    "TripA30",
+    "TripA17"
+  ],
+  "n_test_trips": 14,
+  "integration_method": "trapezoidal integration of measured instantaneous CO2 rate over recorded Time [s] within each complete trip",
+  "source_columns": {
+    "trip": "Trip",
+    "time": "Time [s]",
+    "emission_rate": "CO2 Emissions"
+  },
+  "baseline_phi_gco2_per_kwh": 38.5,
+  "scenario_multipliers": {
+    "-10%": 0.9,
+    "Nominal": 1.0,
+    "+10%": 1.1
+  },
+  "full_dataset_trip_count": 70,
+  "full_dataset_nominal_total_gco2_recomputed": 13166.029690203191,
+  "previous_revision_full_dataset_total_gco2": 13166.22,
+  "previous_total_difference_gco2": -0.1903097968079237,
+  "test_trip_nominal_aggregate_total_gco2": 2193.7247320271626,
+  "test_trip_nominal_mean_total_gco2": 156.6946237162259,
+  "scenario_summary": [
+    {
+      "scenario": "-10%",
+      "phi_gco2_per_kwh": 34.65,
+      "multiplier": 0.9,
+      "n_test_trips": 14,
+      "aggregate_total_gco2": 1974.352258824446,
+      "mean_trip_total_gco2": 141.02516134460328,
+      "median_trip_total_gco2": 121.33396341518369,
+      "q1_trip_total_gco2": 92.38459449315246,
+      "q3_trip_total_gco2": 141.3357510386215
+    },
+    {
+      "scenario": "Nominal",
+      "phi_gco2_per_kwh": 38.5,
+      "multiplier": 1.0,
+      "n_test_trips": 14,
+      "aggregate_total_gco2": 2193.7247320271626,
+      "mean_trip_total_gco2": 156.6946237162259,
+      "median_trip_total_gco2": 134.81551490575964,
+      "q1_trip_total_gco2": 102.64954943683607,
+      "q3_trip_total_gco2": 157.03972337624612
+    },
+    {
+      "scenario": "+10%",
+      "phi_gco2_per_kwh": 42.35,
+      "multiplier": 1.1,
+      "n_test_trips": 14,
+      "aggregate_total_gco2": 2413.0972052298785,
+      "mean_trip_total_gco2": 172.36408608784845,
+      "median_trip_total_gco2": 148.29706639633565,
+      "q1_trip_total_gco2": 112.91450438051967,
+      "q3_trip_total_gco2": 172.74369571387075
+    }
+  ],
+  "per_trip_nominal_totals_gco2": {
+    "TripA24": 97.29751715991958,
+    "TripB21": 150.82130710495133,
+    "TripB24": 96.45309644376383,
+    "TripA07": 312.16643508424295,
+    "TripA10": 106.74613705054438,
+    "TripB01": 389.72714239650713,
+    "TripA25": 112.5514151453025,
+    "TripB30": 135.74376770366803,
+    "TripA21": 133.88726210785129,
+    "TripA11": 171.4166093092444,
+    "TripB31": 140.65804706147634,
+    "TripB29": 159.11252880001106,
+    "TripA30": 85.85944642741296,
+    "TripA17": 101.28402023226663
+  }
+}

@@ -1,0 +1,92 @@
+name: Revision Strong Tabular Baselines
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - revision-r2-reviewer3-4
+    paths:
+      - scripts/run_revision_strong_tabular_baselines.py
+      - src/revision_protocol.py
+      - .github/workflows/revision-strong-tabular-baselines.yml
+
+jobs:
+  strong-tabular-baselines:
+    name: ${{ matrix.dataset }} XGBoost and Extra Trees
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        dataset: [ev, qx50, blazer, pacifica]
+
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy pandas scipy scikit-learn joblib xgboost
+
+      - name: Verify runner imports
+        run: |
+          python -m py_compile scripts/run_revision_strong_tabular_baselines.py
+          python -c "from scripts.run_revision_strong_tabular_baselines import EXTRA_TREES_CONFIGS, XGBOOST_CONFIGS; print(len(EXTRA_TREES_CONFIGS), len(XGBOOST_CONFIGS))"
+
+      - name: Run full-data strong tabular baselines
+        run: |
+          python scripts/run_revision_strong_tabular_baselines.py \
+            --dataset "${{ matrix.dataset }}" \
+            --threads 4
+
+      - name: Verify artifact metadata
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          dataset = "${{ matrix.dataset }}"
+          path = Path("artifacts/revision_strong_tabular_baselines") / f"{dataset}.json"
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          assert payload["dataset"] == dataset
+          assert payload["seed"] == 20260801
+          assert payload["split_manifest"]["seed"] == 20260801
+          assert payload["scaler_fit_scope"] == "training_trip_rows_only"
+          assert payload["all_windows_used"] is True
+          assert payload["test_set_used_for_selection"] is False
+          assert {item["family"] for item in payload["families"]} == {"extra_trees", "xgboost"}
+          for family in payload["families"]:
+              assert family["selection_metric"] == "validation_mae"
+              assert family["test_set_used_for_selection"] is False
+              assert family["selected_config"]
+              assert family["test"]["mae"] >= 0
+          print(json.dumps({
+              "dataset": dataset,
+              "selected": {
+                  family["family"]: {
+                      "config": family["selected_config"]["name"],
+                      "validation_mae": family["selected_validation"]["mae"],
+                      "test_mae": family["test"]["mae"],
+                  }
+                  for family in payload["families"]
+              },
+          }, indent=2))
+          PY
+
+      - name: Upload baseline artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: revision-strong-tabular-baselines-${{ matrix.dataset }}
+          path: artifacts/revision_strong_tabular_baselines/${{ matrix.dataset }}.*
+          if-no-files-found: error
+          retention-days: 90

@@ -1,0 +1,110 @@
+name: Revision Strong Baselines Status
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/revision-lstm-five-seeds-status.yml
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    env:
+      TARGET_HEAD_SHA: db084e064ef08800132f9f2d7061ea9b2b7abbb9
+      TARGET_BRANCH: revision-r2-reviewer3-4
+      TARGET_WORKFLOW: revision-strong-tabular-baselines.yml
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Inspect strong baseline workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+
+          gh api --method GET \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/${TARGET_WORKFLOW}/runs" \
+            -f branch="${TARGET_BRANCH}" \
+            -f per_page=100 > /tmp/runs.json
+
+          RUN_ID=$(python - <<'PY'
+          import json, os
+          runs = json.load(open('/tmp/runs.json', encoding='utf-8'))['workflow_runs']
+          target = os.environ['TARGET_HEAD_SHA']
+          matches = [r for r in runs if r.get('head_sha') == target and r.get('event') == 'push']
+          if not matches:
+              matches = [r for r in runs if r.get('head_sha') == target]
+          print(matches[0]['id'] if matches else '')
+          PY
+          )
+
+          if [ -z "${RUN_ID}" ]; then
+            python - <<'PY'
+          import json, os
+          json.dump({
+              'found': False,
+              'target_head_sha': os.environ['TARGET_HEAD_SHA'],
+              'target_branch': os.environ['TARGET_BRANCH'],
+              'target_workflow': os.environ['TARGET_WORKFLOW'],
+          }, open('artifacts/strong-baselines-status.json', 'w', encoding='utf-8'), indent=2)
+          PY
+            exit 0
+          fi
+
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}" > /tmp/run.json
+          gh api --method GET "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/jobs" -f per_page=100 > /tmp/jobs.json
+          gh api --method GET "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts" -f per_page=100 > /tmp/artifacts.json
+
+          python - <<'PY'
+          import collections, json
+          run = json.load(open('/tmp/run.json', encoding='utf-8'))
+          jobs = json.load(open('/tmp/jobs.json', encoding='utf-8'))['jobs']
+          artifacts = json.load(open('/tmp/artifacts.json', encoding='utf-8'))['artifacts']
+          payload = {
+              'found': True,
+              'run_id': run['id'],
+              'name': run['name'],
+              'event': run['event'],
+              'head_sha': run['head_sha'],
+              'status': run['status'],
+              'conclusion': run.get('conclusion'),
+              'created_at': run['created_at'],
+              'updated_at': run['updated_at'],
+              'html_url': run['html_url'],
+              'job_count': len(jobs),
+              'job_status_counts': dict(collections.Counter(j['status'] for j in jobs)),
+              'job_conclusion_counts': dict(collections.Counter(str(j.get('conclusion')) for j in jobs)),
+              'jobs': [{
+                  'id': j['id'],
+                  'name': j['name'],
+                  'status': j['status'],
+                  'conclusion': j.get('conclusion'),
+                  'started_at': j.get('started_at'),
+                  'completed_at': j.get('completed_at'),
+                  'failed_steps': [s['name'] for s in j.get('steps', []) if s.get('conclusion') == 'failure'],
+              } for j in jobs],
+              'artifact_count': len(artifacts),
+              'artifacts': [{
+                  'id': a['id'],
+                  'name': a['name'],
+                  'expired': a['expired'],
+                  'size_in_bytes': a['size_in_bytes'],
+              } for a in artifacts],
+          }
+          with open('artifacts/strong-baselines-status.json', 'w', encoding='utf-8') as handle:
+              json.dump(payload, handle, indent=2)
+          print(json.dumps(payload, indent=2))
+          PY
+
+      - name: Upload status artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: revision-strong-baselines-status
+          path: artifacts/strong-baselines-status.json
+          if-no-files-found: error
+          retention-days: 7

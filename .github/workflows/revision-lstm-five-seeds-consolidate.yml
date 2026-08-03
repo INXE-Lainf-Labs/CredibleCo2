@@ -1,0 +1,99 @@
+name: Consolidate Revision LSTM Five Seeds
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - scripts/consolidate_revision_lstm_five_seeds.py
+      - .github/workflows/revision-lstm-five-seeds-consolidate.yml
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+jobs:
+  consolidate:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_RUN_ID: '30742131505'
+      TARGET_BRANCH: revision-r2-reviewer3-4
+      TARGET_PR: '1'
+    steps:
+      - name: Check out revision branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Download all five-seed artifacts
+        run: |
+          rm -rf downloaded-five-seeds
+          mkdir -p downloaded-five-seeds
+          gh run download "$SOURCE_RUN_ID" --dir downloaded-five-seeds
+          test "$(find downloaded-five-seeds -name '*_emissions_seed*.json' | wc -l)" -eq 20
+
+      - name: Audit and consolidate results
+        run: |
+          python scripts/consolidate_revision_lstm_five_seeds.py \
+            --artifacts-dir downloaded-five-seeds \
+            --baseline-csv artifacts/revision_full_data_head_to_head_results.csv \
+            --summary-md artifacts/revision_lstm_cpu_summary.md \
+            --output-csv artifacts/revision_lstm_five_seeds_results.csv \
+            --pr-snippet /tmp/revision_lstm_five_seeds_pr.md
+
+      - name: Commit consolidated artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add artifacts/revision_lstm_cpu_summary.md artifacts/revision_lstm_five_seeds_results.csv
+          if git diff --cached --quiet; then
+            echo "No artifact changes to commit"
+          else
+            git commit -m "Consolidate five-seed LSTM results"
+            git push origin "HEAD:${TARGET_BRANCH}"
+          fi
+
+      - name: Update draft PR body
+        run: |
+          gh pr view "$TARGET_PR" --repo "$GITHUB_REPOSITORY" --json body --jq .body > /tmp/pr-body-old.md
+          python - <<'PY'
+          from pathlib import Path
+
+          start = '<!-- FIVE_SEED_RESULTS_START -->'
+          end = '<!-- FIVE_SEED_RESULTS_END -->'
+          body = Path('/tmp/pr-body-old.md').read_text(encoding='utf-8')
+          snippet = Path('/tmp/revision_lstm_five_seeds_pr.md').read_text(encoding='utf-8').strip()
+          if start in body and end in body:
+              prefix = body.split(start, 1)[0].rstrip()
+              suffix = body.split(end, 1)[1].lstrip()
+              updated = f'{prefix}\n\n{snippet}\n\n{suffix}'.rstrip() + '\n'
+          else:
+              updated = body.rstrip() + '\n\n' + snippet + '\n'
+          updated = updated.replace(
+              '- [ ] Decide whether to run five LSTM seeds with the trip split held fixed.',
+              '- [x] Run and audit five LSTM seeds with the trip split held fixed.',
+          )
+          Path('/tmp/pr-body-new.md').write_text(updated, encoding='utf-8')
+          PY
+          gh pr edit "$TARGET_PR" --repo "$GITHUB_REPOSITORY" --body-file /tmp/pr-body-new.md
+
+      - name: Upload consolidation audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: revision-lstm-five-seeds-consolidation
+          path: |
+            artifacts/revision_lstm_five_seeds_results.csv
+            artifacts/revision_lstm_cpu_summary.md
+          if-no-files-found: error
+          retention-days: 90
+
+# Triggered after workflow registration so the pull-request event can execute it.
