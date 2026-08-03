@@ -17,6 +17,10 @@ on:
       - scripts/run_revision_feature_model_head_to_head.py
       - .github/workflows/revision-feature-model-head-to-head.yml
 
+concurrency:
+  group: revision-feature-model-head-to-head
+  cancel-in-progress: true
+
 jobs:
   feature-model-benchmark:
     runs-on: ubuntu-latest
