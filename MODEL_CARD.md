@@ -1,52 +1,39 @@
-# Model Card — Credible Co2
+# Model card — corrected second-revision experiments
 
-This section covers information regarding models and experiments conducted for the paper.
-## 1. General Information:
-Here we provide a list of the LSTM models and datasets they were trained to predict Carbon Dioxide (Co2) emissions (or features related to it).
+## Intended use
 
-|    Dataset |   Entries |   Type    |
-|    :------:    |   :------:    |   :------:    | 
-|    Infiniti QX50   |   `377149`    |   ICEV    |
-|    Chevrolet Blazer   |   `108678`    |   ICEV    |
-|    Chrysler Pacifica   |   `183996`    |   ICEV    |
-|    BMW i3 (ieee)   |   `1094794`    |   EV    |
+The models support in-domain prediction of instantaneous CO2-equivalent emissions and, for the BMW i3 branch, prediction of motor torque and throttle from observed context. The study is a methodological readiness assessment, not a causal EV-versus-ICEV comparison.
 
+## Data and conditioning scope
 
-LSTMs:
-- Electrical Vehicle (EV): Between 1-4 layers with 32 hidden units per layer + layer norm and residual connections.
-- Internal Combustion Engine Vehicle (ICEV): Between 1-4 layers with 64 hidden units per layer + layer norm and residual connections.
-## 2. Intended uses
-The overall methodology (models, training scritps, data processing routines, etc) is intended to researchers or enthusiasts who may feel inspired to build upon this project to carry out work involving Co2 prediction with vehicle (time-series) data or related.
+Observed shared variables include speed, acceleration and thermal context. Grade/elevation, payload, wind, driver identity, gear position and transmission state are absent from at least one dataset. Predictions and comparisons are therefore conditioned only on the observed shared covariates.
 
-## 3. Evaluation scenarios
-- 3.1 - Domain Specific Training:
-     - Emission model: Trained to predict Co2 emissions.
-     - Feature model: Trained to predict domain-specific actuation variables, [torque, throttle], using only contextual variables common to both domains, namely: velocity, ambient temperature, cabin temperature, and longitudinal acceleration.
-- 3.2 - Proxy Validation:
-     - This stage acts as a pseudo-counterfactual analysis, in which we assess the capability of the feature models by evaluating how emission models behave when using features predicted by the feature models instead of original (dataset) features.
-- 3.3 - Proposed Test-Time Conterfactual Analysis:
-     - In this final stage, we propose to treat the EV as a counterfactual system under identical operating conditions as an ICEV’s trajectory. The ICEV context (velocity, temperatures, longitudinal acceleration) would be fed to the pre trained EV Feature model to infer the torque and throttle that an EV would likely produce. These inferred signals, together with the velocity profile, would then be passed to the EV Emissions model to generate the counterfactual EV emissions series
-## 4. Results
-- Electric Vehicles
+## Architecture and training
 
-|    EV Dataset |    Metric    |   Split   |   Model Type    |   Result  |
-|    :------:    |   :------:    |   :------:    |   :------:    |   :------:    |
-|    ieee (BmW i3)   |    mse  |  train   |   Emission Model  |   0.00818 ± 0.01607  |
-|    ieee (BmW i3)   |    mse  |  val   |   Emission Model  |   0.00177 ± 0.01607  |
-|    ieee (BmW i3)   |    mae  |  val   |   Emission Model  |   0.02055 |
-|    ieee (BmW i3)   |    mse  |  train   |   Feature Model  |   92.21539 ± 0.01607  |
-|    ieee (BmW i3)   |    mse  |  val   |   Feature Model  |   113.46008 ± 0.01607  |
-|    ieee (BmW i3)   |    mae  |  val   |   Feature Model  |   4.32655 |
-- Combustion Vehicles
+The recurrent implementation uses an input LSTM with hidden dimension 32, four residual LSTM blocks with layer normalization and dropout, and a linear output head. Window length is 10. Training uses AdamW, MSE, batch size 512, 20 epochs, one warm-up epoch and cosine learning-rate decay. The checkpoint minimizing validation MSE is restored before testing.
 
-|    ICEV Dataset |  Metric (Emission Model) |   Split   |   Result    |
-|    :------:    |   :------:    |   :------:    |   :------:    |
-|    QX50    |    mse  |  train   |   0.09683 ± 0.10378  |
-|    QX50    |    mse  |  val  |  0.07491 ± 0.0143    |
-|    QX50    |    mae  |  val  |  0.07491 |
-|    Blazer    |    mse  |  train   |   0.0726 ± 0.07577  |
-|    Blazer    |    mse  |  val  |  2.96825 ± 0.41827    |
-|    Blazer    |    mae  |  val  |  2.96825 |
-|    Pacifica    |    mse  |  train   |   0.83086 ± 0.2706  |
-|    Pacifica    |    mse  |  val  |  0.46186 ± 0.12619    |
-|    Pacifica    |    mae  |  val  |  0.46186 |
+## Validation protocol
+
+Complete trips are disjoint across train, validation and test. The two-stage split reserves 20% for test and then 20% of the remainder for validation, with fractional holdout counts rounded up; the BMW i3 manifest contains 44/12/14 trips. Scaling uses training trips only, and each length-10 window predicts the following timestep.
+
+Five fixed-split training seeds, 20260801–20260805, quantify optimization variation for the four emissions models. The EV feature-model LSTM is one pre-specified validation-selected run at training seed 20260801. Trip-level uncertainty uses 10,000 complete-trip bootstrap resamples. Non-recurrent candidates include the training-set mean, Ridge, histogram gradient boosting, random forest and MLP.
+
+## Performance summary
+
+Five-seed mean emissions MAE is 0.01790 g/s for BMW i3, 0.15449 g/s for QX50, 0.13757 g/s for Blazer and 0.91359 g/s for Pacifica. The selected non-recurrent emissions baselines have lower mean MAE than the corresponding five-seed LSTM means for all four datasets; no general LSTM-superiority claim is supported.
+
+For the EV context-to-actuation task, histogram gradient boosting is selected without combining torque and throttle units because the same configuration independently minimizes both validation MAEs: 3.8308 Nm for torque and 3.6779 percentage points for throttle. Across the 14 fixed test trips, its trip-mean MAE is 4.2330 Nm for torque and 3.6218 percentage points for throttle, compared with the canonical single-run LSTM values of 4.0504 Nm and 3.7780 percentage points. The result is mixed by output and does not establish a general advantage for recurrent or non-recurrent estimators.
+
+Replacing measured EV actuation with feature-model predictions increases mean trip-level emissions MAE from 0.0175 to 0.0273 g/s. The mean proxy penalty is 0.0098 g/s, with a 95% complete-trip bootstrap interval of [0.0071, 0.0127].
+
+## Limitations and prohibited interpretation
+
+Do not interpret equal measured speed and temperature as equivalent operating conditions. Do not interpret these results as a causal powertrain effect or as a completed cross-domain counterfactual comparison. Route-matched deployment requires grade, payload, wind, driver protocol and richer transmission-state measurements, together with extrapolation checks and fuller uncertainty propagation.
+
+## Canonical reproduction
+
+- Leakage-free protocol: [`src/revision_protocol.py`](src/revision_protocol.py)
+- LSTM runner: [`scripts/run_revision_lstm_cpu.py`](scripts/run_revision_lstm_cpu.py)
+- EV feature-model benchmark: [`scripts/run_revision_feature_model_head_to_head.py`](scripts/run_revision_feature_model_head_to_head.py)
+- Final feature-model outputs: [`artifacts/revision_feature_model_head_to_head/`](artifacts/revision_feature_model_head_to_head/)
+- Second-revision record: [`submission/r2/`](submission/r2/)
