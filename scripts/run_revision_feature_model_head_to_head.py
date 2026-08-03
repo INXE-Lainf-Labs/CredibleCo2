@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Run an exact full-data recurrent-versus-non-recurrent comparison for the EV feature model.
+"""Run the canonical EV context-to-actuation non-recurrent benchmark.
 
-The task maps shared observed context to motor torque and throttle. All models
-use the corrected complete-trip split, a scaler fitted only on training-trip
-rows, length-10 windows built independently inside each trip, and every
-available train/validation/test window. The non-recurrent family is selected
-by the mean of the two validation MAEs; the test set is evaluated only after
-selection.
+The benchmark uses the corrected complete-trip split, a MinMaxScaler fitted on
+training trips only, length-10 windows built independently within each trip,
+and all eligible windows. Torque and throttle validation MAEs stay in their
+physical units. A candidate is selected only if the same fitted configuration
+independently minimizes validation MAE for every output; no mixed-unit aggregate
+is used. The test set is evaluated once after selection.
 """
 
 from __future__ import annotations
@@ -17,15 +17,20 @@ import json
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 import numpy as np
+from sklearn.dummy import DummyRegressor
+from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
+from sklearn.linear_model import Ridge
+from sklearn.multioutput import MultiOutputRegressor
+from sklearn.neural_network import MLPRegressor
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.run_revision_experiments import flatten_windows, make_model
-from src.revision_protocol import (
+from src.revision_protocol import (  # noqa: E402
     DATASETS,
     SEED,
     SHARED_CONTEXT,
@@ -41,7 +46,37 @@ from src.revision_protocol import (
 )
 
 TARGETS = ["Motor Torque [Nm]", "Throttle [%]"]
-MODELS = ["ridge", "hist_gb", "random_forest", "mlp"]
+
+CANDIDATES: dict[str, list[dict[str, Any]]] = {
+    "training_mean": [{}],
+    "ridge": [{"alpha": alpha} for alpha in (0.01, 0.1, 1.0, 10.0)],
+    "random_forest": [
+        {
+            "n_estimators": 50,
+            "max_depth": 12,
+            "min_samples_leaf": leaf,
+            "max_features": max_features,
+            "n_jobs": -1,
+            "random_state": SEED,
+        }
+        for leaf in (5, 20)
+        for max_features in (1.0, "sqrt")
+    ],
+    "hist_gradient_boosting": [
+        {"max_iter": 200, "learning_rate": learning_rate, "random_state": SEED}
+        for learning_rate in (0.05, 0.1)
+    ],
+    "mlp": [
+        {
+            "hidden_layer_sizes": hidden_layers,
+            "max_iter": 60,
+            "batch_size": 512,
+            "early_stopping": True,
+            "random_state": SEED,
+        }
+        for hidden_layers in ((64,), (128, 64))
+    ],
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -52,107 +87,78 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def per_output_mae(y_true: np.ndarray, y_pred: np.ndarray) -> list[float]:
-    return [float(x) for x in np.mean(np.abs(y_pred - y_true), axis=0)]
+def flatten_windows(x: np.ndarray) -> np.ndarray:
+    return np.asarray(x).reshape(len(x), -1)
 
 
-def per_target_trip_summary(
-    y_true: np.ndarray, y_pred: np.ndarray, trips: np.ndarray
-) -> dict[str, dict]:
-    result: dict[str, dict] = {}
-    for column, target in enumerate(TARGETS):
-        values = []
-        by_trip = {}
-        for trip in np.unique(trips):
-            mask = trips == trip
-            value = float(np.mean(np.abs(y_pred[mask, column] - y_true[mask, column])))
-            by_trip[str(trip)] = value
-            values.append(value)
-        result[target] = {
-            "per_trip_mae": by_trip,
-            "summary": summarize_trip_metric(values, SEED),
-        }
-    return result
+def build_model(family: str, params: dict[str, Any]):
+    if family == "training_mean":
+        return DummyRegressor(strategy="mean")
+    if family == "ridge":
+        return Ridge(**params)
+    if family == "random_forest":
+        return RandomForestRegressor(**params)
+    if family == "hist_gradient_boosting":
+        return MultiOutputRegressor(HistGradientBoostingRegressor(**params))
+    if family == "mlp":
+        return MLPRegressor(**params)
+    raise ValueError(f"Unknown family: {family}")
 
 
-def evaluate_candidate(
-    name: str,
-    x_train: np.ndarray,
-    y_train: np.ndarray,
-    x_validation: np.ndarray,
-    y_validation: np.ndarray,
-    x_test: np.ndarray,
-    y_test: np.ndarray,
-    test_trips: np.ndarray,
-) -> dict:
-    started = time.perf_counter()
-    if name == "training_mean":
-        mean = np.mean(y_train, axis=0, keepdims=True)
-        val_pred = np.repeat(mean, len(y_validation), axis=0)
-        test_pred = np.repeat(mean, len(y_test), axis=0)
-    else:
-        model = make_model(name, output_dim=2, seed=SEED)
-        model.fit(flatten_windows(x_train), y_train)
-        val_pred = np.asarray(model.predict(flatten_windows(x_validation))).reshape(-1, 2)
-        test_pred = np.asarray(model.predict(flatten_windows(x_test))).reshape(-1, 2)
-    fit_seconds = time.perf_counter() - started
+def output_mae(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+    return np.mean(np.abs(np.asarray(y_pred) - np.asarray(y_true)), axis=0)
 
-    val_output = per_output_mae(y_validation, val_pred)
-    test_output = per_output_mae(y_test, test_pred)
+
+def trip_summary(
+    y_true: np.ndarray, y_pred: np.ndarray, trips: np.ndarray, output_index: int
+) -> dict[str, Any]:
+    by_trip: dict[str, float] = {}
+    for trip in np.unique(trips):
+        mask = trips == trip
+        by_trip[str(trip)] = float(
+            np.mean(np.abs(y_pred[mask, output_index] - y_true[mask, output_index]))
+        )
     return {
-        "model": name,
-        "fit_seconds": fit_seconds,
-        "validation_mae_by_target": dict(zip(TARGETS, val_output)),
-        "validation_mean_output_mae": float(np.mean(val_output)),
-        "test_window_mae_by_target": dict(zip(TARGETS, test_output)),
-        "test_mean_output_mae": float(np.mean(test_output)),
-        "test_trip_mae_by_target": per_target_trip_summary(
-            y_test, test_pred, test_trips
-        ),
+        "per_trip_mae": by_trip,
+        "summary": summarize_trip_metric(by_trip.values(), SEED),
     }
 
 
-def markdown(payload: dict) -> str:
-    selected = payload["selected_by_validation_mean_output_mae"]
-    lines = [
-        "# Full-data EV feature-model head-to-head benchmark",
-        "",
-        "All candidates use the same corrected complete-trip protocol and every",
-        "available window. Selection uses only the mean of the torque and throttle",
-        "validation MAEs. The test set is evaluated after the ranking is fixed.",
-        "",
-        f"- Windows: train={payload['window_counts']['train']:,}, validation={payload['window_counts']['validation']:,}, test={payload['window_counts']['test']:,}",
-        f"- Validation-selected baseline: `{selected['model']}`",
-        "",
-        "| Model | Validation torque MAE | Validation throttle MAE | Validation mean | Test torque trip-mean MAE | Test throttle trip-mean MAE |",
-        "|---|---:|---:|---:|---:|---:|",
-    ]
-    for item in payload["models"]:
-        torque = item["test_trip_mae_by_target"][TARGETS[0]]["summary"]["mean"]
-        throttle = item["test_trip_mae_by_target"][TARGETS[1]]["summary"]["mean"]
-        lines.append(
-            f"| {item['model']} | {item['validation_mae_by_target'][TARGETS[0]]:.6f} | "
-            f"{item['validation_mae_by_target'][TARGETS[1]]:.6f} | "
-            f"{item['validation_mean_output_mae']:.6f} | {torque:.6f} | {throttle:.6f} |"
-        )
-    lines.extend(
+def markdown(payload: dict[str, Any]) -> str:
+    selected = payload["selected_candidate"]
+    test = payload["test"]
+    return "\n".join(
         [
+            "# Full-data EV feature-model benchmark",
             "",
-            "The manuscript LSTM reference values are torque MAE 4.0504 Nm and",
-            "throttle MAE 3.7780 percentage points, computed as held-out trip means.",
-            "The comparison is descriptive because the feature-model LSTM was not",
-            "rerun across five training seeds.",
+            "All candidates use the same corrected 44/12/14 complete-trip manifest,",
+            "training-only scaling and every eligible length-10 window. Torque and",
+            "throttle validation MAEs remain separate; no mixed-unit aggregate is used.",
+            "",
+            f"- Windows: train={payload['window_counts']['train']:,}, validation={payload['window_counts']['validation']:,}, test={payload['window_counts']['test']:,}",
+            f"- Selected family: `{selected['family']}`",
+            f"- Selected parameters: `{json.dumps(selected['params'], sort_keys=True)}`",
+            f"- Validation torque MAE: {selected['validation_mae_by_target'][TARGETS[0]]:.6f} Nm",
+            f"- Validation throttle MAE: {selected['validation_mae_by_target'][TARGETS[1]]:.6f} percentage points",
+            "",
+            "## Held-out trip means",
+            "",
+            f"- Torque: {test[TARGETS[0]]['trip_mean_mae']:.6f} Nm, 95% CI {test[TARGETS[0]]['bootstrap_95pct_mean_ci']}",
+            f"- Throttle: {test[TARGETS[1]]['trip_mean_mae']:.6f} percentage points, 95% CI {test[TARGETS[1]]['bootstrap_95pct_mean_ci']}",
+            "",
+            "Canonical single-run LSTM references: 4.0504 Nm torque and 3.7780",
+            "percentage points throttle. The comparison is mixed by output and is",
+            "descriptive; the feature-model LSTM was not rerun across five seeds.",
             "",
         ]
     )
-    return "\n".join(lines)
 
 
 def main() -> None:
     args = parse_args()
     set_global_seed(SEED)
-    spec = DATASETS["ev"]
-    frame = load_dataset(spec)
+
+    frame = load_dataset(DATASETS["ev"])
     split = complete_trip_split(frame, seed=SEED)
     scaler = fit_feature_scaler(frame, split.train_trip_ids, SHARED_CONTEXT)
 
@@ -171,26 +177,69 @@ def main() -> None:
         frame, split.test_trip_ids, SHARED_CONTEXT, TARGETS, scaler, WINDOW_SIZE
     )
 
-    results = [
-        evaluate_candidate(
-            name,
-            x_train,
-            y_train,
-            x_validation,
-            y_validation,
-            x_test,
-            y_test,
-            test_trips,
-        )
-        for name in ["training_mean", *MODELS]
-    ]
-    selected = min(results, key=lambda item: item["validation_mean_output_mae"])
+    flat_train = flatten_windows(x_train)
+    flat_validation = flatten_windows(x_validation)
+    flat_test = flatten_windows(x_test)
 
-    payload = {
+    candidates: list[dict[str, Any]] = []
+    fitted: list[tuple[str, dict[str, Any], Any, np.ndarray]] = []
+
+    for family, grid in CANDIDATES.items():
+        for params in grid:
+            started = time.perf_counter()
+            model = build_model(family, params)
+            model.fit(flat_train, y_train)
+            validation_prediction = np.asarray(model.predict(flat_validation)).reshape(-1, 2)
+            validation_mae = output_mae(y_validation, validation_prediction)
+            record = {
+                "family": family,
+                "params": params,
+                "validation_mae_by_target": dict(zip(TARGETS, map(float, validation_mae))),
+                "fit_seconds": time.perf_counter() - started,
+            }
+            candidates.append(record)
+            fitted.append((family, params, model, validation_mae))
+            print(json.dumps(record), flush=True)
+
+    validation_matrix = np.vstack([entry[3] for entry in fitted])
+    minimizers = np.argmin(validation_matrix, axis=0)
+    if not np.all(minimizers == minimizers[0]):
+        winners = [fitted[int(index)][0] for index in minimizers]
+        raise RuntimeError(
+            "No single candidate independently minimizes every output-specific "
+            f"validation MAE. Winners: {dict(zip(TARGETS, winners))}. "
+            "Pre-specify a dimensionless or task-priority selection rule before testing."
+        )
+
+    selected_index = int(minimizers[0])
+    family, params, selected_model, selected_validation_mae = fitted[selected_index]
+
+    test_prediction = np.asarray(selected_model.predict(flat_test)).reshape(-1, 2)
+    test_window_mae = output_mae(y_test, test_prediction)
+    test_payload: dict[str, Any] = {}
+    for index, target in enumerate(TARGETS):
+        summary = trip_summary(y_test, test_prediction, test_trips, index)["summary"]
+        test_payload[target] = {
+            "window_mae": float(test_window_mae[index]),
+            "trip_mean_mae": float(summary["mean"]),
+            "bootstrap_95pct_mean_ci": summary["bootstrap_95pct_mean_ci"],
+            "n_test_trips": int(len(np.unique(test_trips))),
+        }
+
+    selected_candidate = {
+        "family": family,
+        "params": params,
+        "validation_mae_by_target": dict(zip(TARGETS, map(float, selected_validation_mae))),
+        "selection_rule": (
+            "unique fitted candidate with minimum validation MAE for both outputs; "
+            "torque and throttle are not combined across units"
+        ),
+    }
+
+    payload: dict[str, Any] = {
         "status": "completed_full_data_feature_model_head_to_head",
         "dataset": "ev",
-        "display_name": spec.display_name,
-        "task": "shared observed context to motor torque and throttle",
+        "display_name": DATASETS["ev"].display_name,
         "seed": SEED,
         "window_size": WINDOW_SIZE,
         "feature_columns": SHARED_CONTEXT,
@@ -206,17 +255,19 @@ def main() -> None:
             "validation": window_count_by_trip(frame, split.validation_trip_ids),
             "test": window_count_by_trip(frame, split.test_trip_ids),
         },
-        "models": results,
-        "selected_by_validation_mean_output_mae": selected,
-        "selection_metric": "mean of torque and throttle validation MAEs",
+        "candidates": candidates,
+        "selected_candidate": selected_candidate,
+        "test": test_payload,
         "test_set_used_for_selection": False,
         "lstm_reference_trip_mean_mae": {
-            "Motor Torque [Nm]": 4.0504,
-            "Throttle [%]": 3.7780,
+            TARGETS[0]: 4.0504,
+            TARGETS[1]: 3.7780,
+            "training_seed": SEED,
+            "multi_seed_rerun": False,
         },
         "interpretation_guardrail": (
-            "Descriptive single-split comparison. The feature-model LSTM reference "
-            "was not rerun across five training seeds."
+            "The result is mixed by output and does not establish general recurrent "
+            "or non-recurrent superiority."
         ),
     }
 
@@ -225,56 +276,53 @@ def main() -> None:
     save_json(output_dir / "ev_feature_model.json", payload)
     (output_dir / "ev_feature_model.md").write_text(markdown(payload), encoding="utf-8")
 
-    with (output_dir / "ev_feature_model.csv").open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(
-            handle,
-            fieldnames=[
-                "model",
-                "validation_torque_mae",
-                "validation_throttle_mae",
-                "validation_mean_output_mae",
-                "test_torque_window_mae",
-                "test_throttle_window_mae",
-                "test_torque_trip_mean_mae",
-                "test_torque_ci_low",
-                "test_torque_ci_high",
-                "test_throttle_trip_mean_mae",
-                "test_throttle_ci_low",
-                "test_throttle_ci_high",
-                "selected",
-            ],
-        )
+    with (output_dir / "ev_feature_model_selection.csv").open(
+        "w", newline="", encoding="utf-8"
+    ) as handle:
+        fieldnames = ["family", "params", f"val_mae_{TARGETS[0]}", f"val_mae_{TARGETS[1]}"]
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
-        for item in results:
-            torque_summary = item["test_trip_mae_by_target"][TARGETS[0]]["summary"]
-            throttle_summary = item["test_trip_mae_by_target"][TARGETS[1]]["summary"]
+        for item in candidates:
             writer.writerow(
                 {
-                    "model": item["model"],
-                    "validation_torque_mae": item["validation_mae_by_target"][TARGETS[0]],
-                    "validation_throttle_mae": item["validation_mae_by_target"][TARGETS[1]],
-                    "validation_mean_output_mae": item["validation_mean_output_mae"],
-                    "test_torque_window_mae": item["test_window_mae_by_target"][TARGETS[0]],
-                    "test_throttle_window_mae": item["test_window_mae_by_target"][TARGETS[1]],
-                    "test_torque_trip_mean_mae": torque_summary["mean"],
-                    "test_torque_ci_low": torque_summary["bootstrap_95pct_mean_ci"][0],
-                    "test_torque_ci_high": torque_summary["bootstrap_95pct_mean_ci"][1],
-                    "test_throttle_trip_mean_mae": throttle_summary["mean"],
-                    "test_throttle_ci_low": throttle_summary["bootstrap_95pct_mean_ci"][0],
-                    "test_throttle_ci_high": throttle_summary["bootstrap_95pct_mean_ci"][1],
-                    "selected": item["model"] == selected["model"],
+                    "family": item["family"],
+                    "params": json.dumps(item["params"]),
+                    f"val_mae_{TARGETS[0]}": item["validation_mae_by_target"][TARGETS[0]],
+                    f"val_mae_{TARGETS[1]}": item["validation_mae_by_target"][TARGETS[1]],
+                }
+            )
+
+    with (output_dir / "ev_feature_model.csv").open(
+        "w", newline="", encoding="utf-8"
+    ) as handle:
+        fieldnames = [
+            "target",
+            "selected_family",
+            "selected_params",
+            "test_window_mae",
+            "test_trip_mean_mae",
+            "bootstrap_ci_low",
+            "bootstrap_ci_high",
+            "n_test_trips",
+        ]
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for target in TARGETS:
+            test_item = test_payload[target]
+            writer.writerow(
+                {
+                    "target": target,
+                    "selected_family": family,
+                    "selected_params": json.dumps(params),
+                    "test_window_mae": test_item["window_mae"],
+                    "test_trip_mean_mae": test_item["trip_mean_mae"],
+                    "bootstrap_ci_low": test_item["bootstrap_95pct_mean_ci"][0],
+                    "bootstrap_ci_high": test_item["bootstrap_95pct_mean_ci"][1],
+                    "n_test_trips": test_item["n_test_trips"],
                 }
             )
 
     print(markdown(payload))
-    print(json.dumps({
-        "selected_model": selected["model"],
-        "validation_mean_output_mae": selected["validation_mean_output_mae"],
-        "selected_test_trip_mae_by_target": {
-            target: selected["test_trip_mae_by_target"][target]["summary"]
-            for target in TARGETS
-        },
-    }, indent=2))
 
 
 if __name__ == "__main__":

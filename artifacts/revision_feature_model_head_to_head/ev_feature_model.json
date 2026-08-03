@@ -1,0 +1,49 @@
+{
+  "status": "completed_full_data_feature_model_head_to_head",
+  "seed": 20260801,
+  "split_trip_counts": {
+    "train": 44,
+    "validation": 12,
+    "test": 14
+  },
+  "window_counts": {
+    "train": 691930,
+    "validation": 216951,
+    "test": 185212
+  },
+  "selection_rule": "unique candidate with lowest validation MAE for both outputs; no mixed-unit aggregate",
+  "selected_candidate": {
+    "family": "hist_gradient_boosting",
+    "params": {
+      "max_iter": 200,
+      "learning_rate": 0.1,
+      "random_state": 20260801
+    },
+    "validation_mae": {
+      "Motor Torque [Nm]": 3.8308479550104977,
+      "Throttle [%]": 3.677870783585032
+    }
+  },
+  "test_results": {
+    "Motor Torque [Nm]": {
+      "test_window_mae": 4.2159342855928,
+      "test_trip_mean_mae": 4.232976859532887,
+      "bootstrap_95pct_mean_ci": [3.953878796632047, 4.552606550274386],
+      "n_test_trips": 14
+    },
+    "Throttle [%]": {
+      "test_window_mae": 3.782408124840086,
+      "test_trip_mean_mae": 3.6218459664003695,
+      "bootstrap_95pct_mean_ci": [2.865828169126479, 4.901915227296642],
+      "n_test_trips": 14
+    }
+  },
+  "lstm_reference": {
+    "Motor Torque [Nm]": 4.0504,
+    "Throttle [%]": 3.778,
+    "training_seed": 20260801,
+    "multi_seed_rerun": false
+  },
+  "test_set_used_for_selection": false,
+  "interpretation_guardrail": "The result is mixed by output and does not establish general recurrent or non-recurrent superiority."
+}

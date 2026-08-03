@@ -1,0 +1,75 @@
+{
+  "manuscript_id": "ITS-2025-10-0427.R1",
+  "canonical_branch": "main",
+  "split_seed": 20260801,
+  "emissions_training_seeds": [20260801, 20260802, 20260803, 20260804, 20260805],
+  "window_size": 10,
+  "bootstrap_resamples": 10000,
+  "protocol_checks": {
+    "complete_trip_split": true,
+    "two_stage_trip_allocation": "20% test, then 20% of remainder validation; fractional holdouts rounded up",
+    "training_only_scaler": true,
+    "windows_after_split_within_trip": true,
+    "window_target": "timestep immediately following each length-10 context window",
+    "validation_selected_checkpoint": true,
+    "test_used_for_selection": false
+  },
+  "sequence_model": {
+    "architecture": "MultipleLayerLSTM",
+    "hidden_dimension": 32,
+    "residual_lstm_blocks": 4,
+    "optimizer": "AdamW",
+    "loss": "MSE",
+    "batch_size": 512,
+    "epochs": 20,
+    "warmup_epochs": 1,
+    "schedule": "cosine learning-rate decay"
+  },
+  "manuscript_assets": {
+    "pages": 20,
+    "figures": 13,
+    "tables": 10,
+    "references": 35
+  },
+  "corrected_proxy": {
+    "direct_mean_mae_g_s": 0.0175,
+    "proxy_mean_mae_g_s": 0.0273,
+    "difference_mean_g_s": 0.0098,
+    "bootstrap_95_ci": [0.0071, 0.0127]
+  },
+  "ev_feature_nonrecurrent_baseline": {
+    "rows": 1094793,
+    "trips": 70,
+    "split_trip_counts": [44, 12, 14],
+    "window_counts": [691930, 216951, 185212],
+    "selected_family": "hist_gradient_boosting",
+    "selected_parameters": {
+      "max_iter": 200,
+      "learning_rate": 0.1,
+      "random_state": 20260801
+    },
+    "validation_mae": {
+      "torque_Nm": 3.8308479550104977,
+      "throttle_percentage_points": 3.677870783585032
+    },
+    "test_trip_mean": {
+      "torque_Nm": 4.232976859532887,
+      "torque_bootstrap_95_ci": [3.953878796632047, 4.552606550274386],
+      "throttle_percentage_points": 3.6218459664003695,
+      "throttle_bootstrap_95_ci": [2.865828169126479, 4.901915227296642]
+    },
+    "lstm_reference": {
+      "torque_Nm": 4.0504,
+      "throttle_percentage_points": 3.778,
+      "training_seed": 20260801,
+      "multi_seed_rerun": false
+    },
+    "selection_rule": "unique candidate with the lowest validation MAE for both torque and throttle; outputs are not combined across units",
+    "python_packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.5",
+      "scikit_learn": "1.9.0"
+    }
+  },
+  "funding": "Research Development Foundation (FUNDEP), MOVER Program, grant 29271.01.01/2023.03-0"
+}

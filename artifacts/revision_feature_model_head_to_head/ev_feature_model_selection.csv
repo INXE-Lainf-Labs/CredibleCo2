@@ -1,0 +1,14 @@
+family,params,val_mae_Motor Torque [Nm],val_mae_Throttle [%]
+training_mean,{},22.60453561066849,16.027727421940543
+ridge,"{""alpha"": 0.01}",5.097089876067432,8.54618847316506
+ridge,"{""alpha"": 0.1}",5.125327132782975,8.548856591346542
+ridge,"{""alpha"": 1.0}",5.209182478370024,8.554333556861797
+ridge,"{""alpha"": 10.0}",5.259553908195001,8.563546463919144
+random_forest,"{""n_estimators"": 50, ""max_depth"": 12, ""min_samples_leaf"": 5, ""max_features"": 1.0, ""n_jobs"": -1, ""random_state"": 20260801}",4.025442151013412,3.994748534886388
+random_forest,"{""n_estimators"": 50, ""max_depth"": 12, ""min_samples_leaf"": 5, ""max_features"": ""sqrt"", ""n_jobs"": -1, ""random_state"": 20260801}",4.030375089932622,4.057194110210491
+random_forest,"{""n_estimators"": 50, ""max_depth"": 12, ""min_samples_leaf"": 20, ""max_features"": 1.0, ""n_jobs"": -1, ""random_state"": 20260801}",4.036466174709809,4.015920851734017
+random_forest,"{""n_estimators"": 50, ""max_depth"": 12, ""min_samples_leaf"": 20, ""max_features"": ""sqrt"", ""n_jobs"": -1, ""random_state"": 20260801}",4.03902094640945,4.073420684518822
+hist_gradient_boosting,"{""max_iter"": 200, ""learning_rate"": 0.05, ""random_state"": 20260801}",3.87964089740562,3.747464793163523
+hist_gradient_boosting,"{""max_iter"": 200, ""learning_rate"": 0.1, ""random_state"": 20260801}",3.8308479550104977,3.677870783585032
+mlp,"{""hidden_layer_sizes"": [64], ""max_iter"": 60, ""batch_size"": 512, ""early_stopping"": true, ""random_state"": 20260801}",4.409170924266367,4.798435722413825
+mlp,"{""hidden_layer_sizes"": [128, 64], ""max_iter"": 60, ""batch_size"": 512, ""early_stopping"": true, ""random_state"": 20260801}",4.30906545364192,4.278447819988008
