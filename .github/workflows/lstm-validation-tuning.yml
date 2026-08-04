@@ -14,6 +14,9 @@ concurrency:
   group: lstm-validation-tuning-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PYTHONPATH: ${{ github.workspace }}
+
 jobs:
   prepare-screen:
     runs-on: ubuntu-latest
