@@ -1,0 +1,257 @@
+name: LSTM Validation-Only Tuning
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - lstm-validation-tuning
+    paths:
+      - scripts/run_lstm_tuning.py
+      - scripts/aggregate_lstm_tuning.py
+      - .github/workflows/lstm-validation-tuning.yml
+
+concurrency:
+  group: lstm-validation-tuning-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONPATH: ${{ github.workspace }}
+
+jobs:
+  prepare-screen:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - id: matrix
+        shell: python
+        run: |
+          import json, os
+          rows = []
+          groups = [("emissions", d) for d in ["ev", "qx50", "blazer", "pacifica"]] + [("feature", "ev")]
+          for task, dataset in groups:
+              target_modes = ["raw", "zscore"] if task == "feature" else ["raw"]
+              for hidden in [16, 32, 64]:
+                  for blocks in [1, 2, 4]:
+                      for target_mode in target_modes:
+                          rows.append(dict(task=task, dataset=dataset, hidden_dim=hidden, num_blocks=blocks, window_size=10, gradient_clip=1.0, target_mode=target_mode))
+              for window in [30, 60]:
+                  for target_mode in target_modes:
+                      rows.append(dict(task=task, dataset=dataset, hidden_dim=32, num_blocks=4, window_size=window, gradient_clip=1.0, target_mode=target_mode))
+              for target_mode in target_modes:
+                  rows.append(dict(task=task, dataset=dataset, hidden_dim=32, num_blocks=4, window_size=10, gradient_clip=0.0, target_mode=target_mode))
+          matrix = json.dumps({"include": rows}, separators=(",", ":"))
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write(f"matrix={matrix}\n")
+          print(f"Prepared {len(rows)} validation-only screening runs")
+
+  screen:
+    needs: prepare-screen
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix: ${{ fromJson(needs.prepare-screen.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy pandas scikit-learn
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Run validation-only screen
+        run: |
+          python scripts/run_lstm_tuning.py \
+            --stage screen \
+            --task '${{ matrix.task }}' \
+            --dataset '${{ matrix.dataset }}' \
+            --split-seed 20260801 \
+            --training-seed 20260801 \
+            --epochs 20 \
+            --hidden-dim '${{ matrix.hidden_dim }}' \
+            --num-blocks '${{ matrix.num_blocks }}' \
+            --window-size '${{ matrix.window_size }}' \
+            --gradient-clip '${{ matrix.gradient_clip }}' \
+            --target-mode '${{ matrix.target_mode }}' \
+            --max-train-windows 120000 \
+            --max-validation-windows 40000 \
+            --output-dir artifacts/lstm_validation_tuning/screen
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screen-${{ matrix.task }}-${{ matrix.dataset }}-h${{ matrix.hidden_dim }}-b${{ matrix.num_blocks }}-w${{ matrix.window_size }}-c${{ matrix.gradient_clip }}-${{ matrix.target_mode }}
+          path: artifacts/lstm_validation_tuning/screen/*.json
+          if-no-files-found: error
+          retention-days: 30
+
+  select-refine:
+    needs: screen
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: screen-*
+          path: downloaded/screen
+          merge-multiple: true
+      - id: select
+        shell: bash
+        run: |
+          python scripts/aggregate_lstm_tuning.py \
+            --input-dir downloaded/screen \
+            --source-stage screen \
+            --top-k 3 \
+            --next-stage refine \
+            --next-epochs 60 \
+            --next-max-train-windows 999999999 \
+            --next-max-validation-windows 999999999 \
+            --output-dir artifacts/lstm_validation_tuning/screen_selection
+          echo "matrix=$(cat artifacts/lstm_validation_tuning/screen_selection/matrix.json)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screen-selection
+          path: artifacts/lstm_validation_tuning/screen_selection
+          retention-days: 90
+
+  refine:
+    needs: select-refine
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix: ${{ fromJson(needs.select-refine.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy pandas scikit-learn
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Run full-data 60-epoch refinement
+        run: |
+          python scripts/run_lstm_tuning.py \
+            --stage refine \
+            --task '${{ matrix.task }}' \
+            --dataset '${{ matrix.dataset }}' \
+            --split-seed '${{ matrix.split_seed }}' \
+            --training-seed '${{ matrix.training_seed }}' \
+            --epochs '${{ matrix.epochs }}' \
+            --hidden-dim '${{ matrix.hidden_dim }}' \
+            --num-blocks '${{ matrix.num_blocks }}' \
+            --window-size '${{ matrix.window_size }}' \
+            --gradient-clip '${{ matrix.gradient_clip }}' \
+            --target-mode '${{ matrix.target_mode }}' \
+            --max-train-windows '${{ matrix.max_train_windows }}' \
+            --max-validation-windows '${{ matrix.max_validation_windows }}' \
+            --output-dir artifacts/lstm_validation_tuning/refine
+      - uses: actions/upload-artifact@v4
+        with:
+          name: refine-${{ matrix.task }}-${{ matrix.dataset }}-h${{ matrix.hidden_dim }}-b${{ matrix.num_blocks }}-w${{ matrix.window_size }}-c${{ matrix.gradient_clip }}-${{ matrix.target_mode }}
+          path: artifacts/lstm_validation_tuning/refine/*.json
+          if-no-files-found: error
+          retention-days: 90
+
+  select-final:
+    needs: refine
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: refine-*
+          path: downloaded/refine
+          merge-multiple: true
+      - id: select
+        shell: bash
+        run: |
+          python scripts/aggregate_lstm_tuning.py \
+            --input-dir downloaded/refine \
+            --source-stage refine \
+            --top-k 1 \
+            --next-stage final \
+            --next-epochs 60 \
+            --next-max-train-windows 999999999 \
+            --next-max-validation-windows 999999999 \
+            --output-dir artifacts/lstm_validation_tuning/final_selection
+          echo "matrix=$(cat artifacts/lstm_validation_tuning/final_selection/matrix.json)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: final-selection
+          path: artifacts/lstm_validation_tuning/final_selection
+          retention-days: 90
+
+  final-five-seeds:
+    needs: select-final
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix: ${{ fromJson(needs.select-final.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy pandas scikit-learn
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Train selected configuration and evaluate fixed test trips
+        run: |
+          python scripts/run_lstm_tuning.py \
+            --stage final \
+            --task '${{ matrix.task }}' \
+            --dataset '${{ matrix.dataset }}' \
+            --split-seed '${{ matrix.split_seed }}' \
+            --training-seed '${{ matrix.training_seed }}' \
+            --epochs '${{ matrix.epochs }}' \
+            --hidden-dim '${{ matrix.hidden_dim }}' \
+            --num-blocks '${{ matrix.num_blocks }}' \
+            --window-size '${{ matrix.window_size }}' \
+            --gradient-clip '${{ matrix.gradient_clip }}' \
+            --target-mode '${{ matrix.target_mode }}' \
+            --max-train-windows '${{ matrix.max_train_windows }}' \
+            --max-validation-windows '${{ matrix.max_validation_windows }}' \
+            --output-dir artifacts/lstm_validation_tuning/final
+      - uses: actions/upload-artifact@v4
+        with:
+          name: final-${{ matrix.task }}-${{ matrix.dataset }}-seed${{ matrix.training_seed }}
+          path: artifacts/lstm_validation_tuning/final/*
+          if-no-files-found: error
+          retention-days: 90
+
+  summarize:
+    needs: final-five-seeds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: final-*
+          path: downloaded/final
+          merge-multiple: true
+      - name: Build final five-seed summary
+        run: |
+          python scripts/aggregate_lstm_tuning.py \
+            --input-dir downloaded/final \
+            --source-stage final \
+            --next-stage summary \
+            --output-dir artifacts/lstm_validation_tuning/summary
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lstm-validation-tuning-summary
+          path: artifacts/lstm_validation_tuning/summary
+          retention-days: 90
