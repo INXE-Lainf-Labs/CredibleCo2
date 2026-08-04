@@ -2,9 +2,9 @@ name: Tuned EV Proxy Composition
 
 on:
   workflow_dispatch:
-  push:
+  pull_request:
     branches:
-      - lstm-validation-tuning
+      - main
     paths:
       - scripts/run_tuned_ev_proxy_composition.py
       - .github/workflows/tuned-ev-proxy-composition.yml
@@ -46,12 +46,9 @@ jobs:
           unzip -q feature.zip -d downloaded/feature
           find downloaded -maxdepth 3 -type f -print
 
-      - name: Download and verify canonical BMW i3 dataset
+      - name: Verify canonical BMW i3 dataset already in the repository
         run: |
-          mkdir -p data
-          curl -L --fail --retry 3 \
-            'https://raw.githubusercontent.com/INXE-Lainf-Labs/descarbonize.ai-inmetro/15569a347d4b53eadf7b36869d793da540dc2268/7_veiculos-propulsao-alternativa/7.2_desenvolvimento-validacao-ml/data/eletrico_ieee.csv' \
-            -o data/eletrico_ieee.csv
+          test -f data/eletrico_ieee.csv
           echo '8ccb1489d4d041e5688e1aa808921c1f7694fb6968521f77b619bee8cafb8262  data/eletrico_ieee.csv' | sha256sum -c -
 
       - name: Run tuned end-to-end composition
