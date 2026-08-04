@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - scripts/run_tuned_ev_proxy_composition.py
+      - scripts/aggregate_tuned_ev_proxy_composition.py
       - .github/workflows/tuned-ev-proxy-composition.yml
 
 permissions:
@@ -20,6 +21,26 @@ jobs:
   compose:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        include:
+          - seed: 20260801
+            emissions_artifact: 8883651979
+            feature_artifact: 8886132818
+          - seed: 20260802
+            emissions_artifact: 8883686161
+            feature_artifact: 8886657880
+          - seed: 20260803
+            emissions_artifact: 8882938517
+            feature_artifact: 8886958607
+          - seed: 20260804
+            emissions_artifact: 8883692889
+            feature_artifact: 8886953571
+          - seed: 20260805
+            emissions_artifact: 8883656588
+            feature_artifact: 8886958666
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,36 +56,78 @@ jobs:
           python -m pip install numpy pandas scikit-learn matplotlib
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 
-      - name: Download tuned checkpoints
+      - name: Download paired tuned checkpoints
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p downloaded/emissions downloaded/feature
-          gh api repos/${{ github.repository }}/actions/artifacts/8883651979/zip > emissions.zip
-          gh api repos/${{ github.repository }}/actions/artifacts/8886132818/zip > feature.zip
+          gh api repos/${{ github.repository }}/actions/artifacts/${{ matrix.emissions_artifact }}/zip > emissions.zip
+          gh api repos/${{ github.repository }}/actions/artifacts/${{ matrix.feature_artifact }}/zip > feature.zip
           unzip -q emissions.zip -d downloaded/emissions
           unzip -q feature.zip -d downloaded/feature
           find downloaded -maxdepth 3 -type f -print
 
-      - name: Verify canonical BMW i3 dataset already in the repository
+      - name: Verify canonical BMW i3 dataset
         run: |
           test -f data/eletrico_ieee.csv
           echo '8ccb1489d4d041e5688e1aa808921c1f7694fb6968521f77b619bee8cafb8262  data/eletrico_ieee.csv' | sha256sum -c -
 
-      - name: Run tuned end-to-end composition
+      - name: Run tuned paired composition
         run: |
+          EMISSIONS_CHECKPOINT=$(find downloaded/emissions -type f -name '*.pt' -print -quit)
+          FEATURE_CHECKPOINT=$(find downloaded/feature -type f -name '*.pt' -print -quit)
+          test -n "$EMISSIONS_CHECKPOINT"
+          test -n "$FEATURE_CHECKPOINT"
           python scripts/run_tuned_ev_proxy_composition.py \
             --dataset data/eletrico_ieee.csv \
-            --emissions-checkpoint downloaded/emissions/final_emissions_ev_w10_h64_b2_clip1p0_raw_seed20260801.pt \
-            --feature-checkpoint downloaded/feature/final_feature_ev_w10_h64_b4_clip1p0_raw_seed20260801.pt \
-            --output-dir artifacts/tuned_ev_proxy_composition
+            --training-seed '${{ matrix.seed }}' \
+            --emissions-checkpoint "$EMISSIONS_CHECKPOINT" \
+            --feature-checkpoint "$FEATURE_CHECKPOINT" \
+            --output-dir artifacts/tuned_ev_proxy_composition_seed${{ matrix.seed }}
 
-      - name: Show result summary
-        run: cat artifacts/tuned_ev_proxy_composition/README.md
+      - name: Show seed summary
+        run: cat artifacts/tuned_ev_proxy_composition_seed${{ matrix.seed }}/README.md
 
       - uses: actions/upload-artifact@v4
         with:
-          name: tuned-ev-proxy-composition
-          path: artifacts/tuned_ev_proxy_composition
+          name: tuned-ev-proxy-composition-seed${{ matrix.seed }}
+          path: artifacts/tuned_ev_proxy_composition_seed${{ matrix.seed }}
+          if-no-files-found: error
+          retention-days: 90
+
+  aggregate:
+    needs: compose
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: lstm-validation-tuning
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install aggregation dependencies
+        run: python -m pip install numpy matplotlib
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: tuned-ev-proxy-composition-seed*
+          path: downloaded/compositions
+
+      - name: Aggregate five paired seeds
+        run: |
+          python scripts/aggregate_tuned_ev_proxy_composition.py \
+            --input-dir downloaded/compositions \
+            --output-dir artifacts/tuned_ev_proxy_composition_five_seed \
+            --bootstrap-resamples 10000
+
+      - name: Show five-seed summary
+        run: cat artifacts/tuned_ev_proxy_composition_five_seed/README.md
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tuned-ev-proxy-composition-five-seed
+          path: artifacts/tuned_ev_proxy_composition_five_seed
           if-no-files-found: error
           retention-days: 90
