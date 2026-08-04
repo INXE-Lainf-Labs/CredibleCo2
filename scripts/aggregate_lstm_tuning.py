@@ -206,3 +206,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+# Content-only touch to retrigger the branch-filtered GitHub Actions workflow.
