@@ -2,6 +2,12 @@ name: Tuned EV Proxy Composition
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - lstm-validation-tuning
+    paths:
+      - scripts/run_tuned_ev_proxy_composition.py
+      - .github/workflows/tuned-ev-proxy-composition.yml
 
 permissions:
   contents: read
